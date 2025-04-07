@@ -22,6 +22,9 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
+// Enable CORS for all routes
+app.use(cors());
+
 // CORS configuration
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' ? process.env.CLIENT_URL : '*',
@@ -76,11 +79,14 @@ app.get('/api/health', (req, res) => {
 
 // Define Routes
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/users', require('./routes/users'));
-app.use('/api/resources', require('./routes/resources'));
-app.use('/api/events', require('./routes/events'));
+
+console.log('Registering /api/articles route');
 app.use('/api/articles', require('./routes/articles'));
+
+app.use('/api/resources', require('./routes/resources'));
+app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/events', require('./routes/events'));
 app.use('/api/lectures', require('./routes/lectures'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/professors', require('./routes/professors'));

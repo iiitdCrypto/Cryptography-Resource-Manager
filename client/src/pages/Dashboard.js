@@ -1,33 +1,19 @@
-import React, { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import React from 'react';
 import styled from 'styled-components';
-import DashboardSidebar from '../components/dashboard/DashboardSidebar';
-import DashboardHome from '../components/dashboard/DashboardHome';
 import DashboardResources from '../components/dashboard/DashboardResources';
 
 const Dashboard = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
   return (
-    <DashboardContainer>
-      <DashboardSidebar isOpen={isSidebarOpen} />
-      <MainContent isSidebarOpen={isSidebarOpen}>
-        <Routes>
-          <Route path="/" element={<DashboardHome />} />
-          <Route path="/resources" element={<DashboardResources />} />
-        </Routes>
-      </MainContent>
-    </DashboardContainer>
+    <DashboardWrapper>
+      <div className="container">
+        <DashboardResources />
+      </div>
+    </DashboardWrapper>
   );
 };
 
-const DashboardContainer = styled.div`
-  display: flex;
-`;
-
-const MainContent = styled.div`
-  flex-grow: 1;
-  padding: 2rem;
+const DashboardWrapper = styled.div`
+  padding: 2rem 0;
   background: ${({ theme }) => theme.colors.backgroundLight};
   min-height: calc(100vh - 60px);
 `;

@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 
 // Create a custom axios instance for API calls
 const apiClient = axios.create({
-  baseURL: 'http://localhost:50011', 
+  baseURL: 'http://localhost:5001', 
   headers: {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*'

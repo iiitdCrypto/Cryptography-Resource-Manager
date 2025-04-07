@@ -1,10 +1,147 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const pool = require('../config/db');
+const { pool, executeQuery } = require('../config/db');
 const auth = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
+require('dotenv').config();
+
+const NEWS_API_KEY = process.env.NEWS_API_KEY;
+const NEWS_API_URL = 'https://newsapi.org/v2/everything';
+
+const CATEGORIES = {
+  cryptography: ['cryptography', 'encryption', 'cipher', 'cryptosystem', 'key exchange'],
+  cryptanalysis: ['cryptanalysis', 'attack', 'vulnerability', 'break', 'crack', 'weakness'],
+  security: ['cybersecurity', 'security', 'protection', 'defense', 'threat', 'privacy'],
+  blockchain: ['blockchain', 'bitcoin', 'cryptocurrency', 'ethereum', 'smart contract']
+};
+
+// Get articles from multiple sources (THIS MUST BE FIRST)
+router.get('/all', async (req, res) => {
+  console.log('Hit /api/articles/all route');
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+    const { category = 'all', search = '' } = req.query;
+
+    console.log('Fetching articles:', { page, pageSize, category, search });
+
+    // NewsAPI query based on category
+    const newsApiQuery = category === 'all' 
+      ? 'cryptography OR encryption OR blockchain OR cybersecurity OR cryptanalysis'
+      : CATEGORIES[category].join(' OR ');
+
+    // Fetch and filter news articles
+    const newsArticles = await fetchNewsArticles(newsApiQuery, page, pageSize, category);
+    
+    // Fetch and filter academic articles
+    const academicArticles = await fetchAcademicArticles(search, category, page, pageSize);
+
+    res.json({
+      success: true,
+      articles: {
+        academic: academicArticles,
+        news: newsArticles
+      }
+    });
+  } catch (error) {
+    console.error('Error in /all route:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching articles',
+      error: error.message 
+    });
+  }
+});
+
+async function fetchNewsArticles(query, page, pageSize, category) {
+  try {
+    const response = await axios.get(NEWS_API_URL, {
+      params: {
+        apiKey: NEWS_API_KEY,
+        q: query,
+        pageSize: pageSize * 2, // Fetch more to account for filtering
+        page: page,
+        language: 'en',
+        sortBy: 'publishedAt'
+      }
+    });
+
+    let articles = response.data.articles.map((article, index) => ({
+      id: `news-${page}-${index}`,
+      title: article.title,
+      type: 'news',
+      description: article.description,
+      publishedAt: article.publishedAt,
+      url: article.url,
+      source: article.source.name,
+      urlToImage: article.urlToImage,
+      category: detectCategory(article.title + ' ' + (article.description || ''))
+    }));
+
+    // Filter by category if specified
+    if (category !== 'all') {
+      articles = articles.filter(article => article.category === category);
+    }
+
+    return {
+      items: articles.slice(0, pageSize),
+      total: response.data.totalResults,
+      page,
+      pageSize,
+      hasMore: articles.length > pageSize
+    };
+  } catch (error) {
+    console.error('NewsAPI Error:', error);
+    return { items: [], total: 0, page, pageSize, hasMore: false };
+  }
+}
+
+async function fetchAcademicArticles(search, category, page, pageSize) {
+  const offset = (page - 1) * pageSize;
+  const query = `
+    SELECT a.*, CONCAT(u.name, ' ', u.surname) as author_name 
+    FROM articles a 
+    LEFT JOIN users u ON a.author_id = u.id
+    WHERE (a.title LIKE ? OR a.content LIKE ?)
+    ORDER BY a.created_at DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  const [articles] = await pool.query(query, 
+    [`%${search}%`, `%${search}%`, pageSize, offset]
+  );
+
+  const filtered = articles.map(article => ({
+    ...article,
+    category: detectCategory(article.title + ' ' + article.content)
+  })).filter(article => 
+    category === 'all' || article.category === category
+  );
+
+  const [total] = await pool.query('SELECT COUNT(*) as count FROM articles');
+
+  return {
+    items: filtered,
+    total: total[0].count,
+    page,
+    pageSize,
+    hasMore: offset + filtered.length < total[0].count
+  };
+}
+
+function detectCategory(text) {
+  text = text.toLowerCase();
+  
+  for (const [category, keywords] of Object.entries(CATEGORIES)) {
+    if (keywords.some(keyword => text.includes(keyword))) {
+      return category;
+    }
+  }
+  
+  return 'cryptography'; // Default category
+}
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
@@ -149,127 +286,17 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
-// Get articles from multiple sources
-router.get('/', async (req, res) => {
-  try {
-    const { search = '', category = 'all', page = 1 } = req.query;
-    const searchQuery = search || `cryptography ${category !== 'all' ? category : ''}`;
-    
-    // Combine results from multiple APIs
-    const sources = [
-      // News API
-      axios.get(`https://newsapi.org/v2/everything`, {
-        params: {
-          q: searchQuery,
-          language: 'en',
-          sortBy: 'publishedAt',
-          pageSize: 10,
-          page: page,
-          apiKey: process.env.NEWS_API_KEY
-        }
-      }).catch(err => ({ data: { articles: [] } })),
-      
-      // NewsData.io API
-      axios.get(`https://newsdata.io/api/1/news`, {
-        params: {
-          apikey: process.env.NEWSDATA_API_KEY,
-          q: searchQuery,
-          language: 'en',
-          page: page
-        }
-      }).catch(err => ({ data: { results: [] } }))
-    ];
-    
-    // Execute all requests in parallel
-    const results = await Promise.allSettled(sources);
-    
-    // Process and normalize the results
-    let articles = [];
-    
-    results.forEach(result => {
-      if (result.status === 'fulfilled') {
-        const response = result.value;
-        
-        if (response.config && response.config.url.includes('newsapi.org')) {
-          // Process News API results
-          const newsArticles = response.data.articles.map(article => ({
-            id: article.url,
-            title: article.title,
-            description: article.description || 'No description available',
-            content: article.content,
-            url: article.url,
-            imageUrl: article.urlToImage,
-            source: article.source.name,
-            publishedAt: article.publishedAt,
-            category: detectCategory(article.title + ' ' + (article.description || '')),
-            type: 'news'
-          }));
-          articles = [...articles, ...newsArticles];
-        } 
-        else if (response.config && response.config.url.includes('newsdata.io')) {
-          // Process NewsData.io results
-          const newsDataArticles = (response.data.results || []).map(article => ({
-            id: article.link,
-            title: article.title,
-            description: article.description || article.content || 'No description available',
-            content: article.content,
-            url: article.link,
-            imageUrl: article.image_url,
-            source: article.source_id,
-            publishedAt: article.pubDate,
-            category: detectCategory(article.title + ' ' + (article.description || '')),
-            type: 'news'
-          }));
-          articles = [...articles, ...newsDataArticles];
-        }
-      }
-    });
-    
-    // Filter out non-cryptography related articles
-    articles = articles.filter(article => 
-      isCryptographyRelated(article.title + ' ' + (article.description || ''))
-    );
-    
-    // Sort by date (newest first)
-    articles.sort((a, b) => 
-      new Date(b.publishedAt || '2000-01-01') - new Date(a.publishedAt || '2000-01-01')
-    );
-    
-    // Remove duplicates based on URL
-    const uniqueArticles = [];
-    const urlSet = new Set();
-    
-    articles.forEach(article => {
-      if (!urlSet.has(article.url)) {
-        urlSet.add(article.url);
-        uniqueArticles.push(article);
-      }
-    });
-    
-    res.json(uniqueArticles);
-  } catch (error) {
-    console.error('Error fetching articles:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
 // Function to detect the category of an article based on its content
 function detectCategory(text) {
   text = text.toLowerCase();
   
-  if (text.includes('blockchain') || text.includes('bitcoin') || text.includes('ethereum')) {
-    return 'blockchain';
-  } else if (text.includes('cryptanalysis') || text.includes('breaking') || text.includes('attack')) {
-    return 'cryptanalysis';
-  } else if (text.includes('security') || text.includes('protection') || text.includes('defense')) {
-    return 'security';
-  } else if (text.includes('encryption') || text.includes('cipher') || text.includes('encrypt')) {
-    return 'encryption';
-  } else if (text.includes('algorithm') || text.includes('protocol')) {
-    return 'algorithms';
-  } else {
-    return 'cryptography';
+  for (const [category, keywords] of Object.entries(CATEGORIES)) {
+    if (keywords.some(keyword => text.includes(keyword))) {
+      return category;
+    }
   }
+  
+  return 'cryptography'; // Default category
 }
 
 // Function to check if an article is related to cryptography

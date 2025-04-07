@@ -59,9 +59,10 @@ const ResetPassword = () => {
       setResetError('');
       
       try {
-        const response = await axios.post(`http://localhost:5000/api/auth/reset-password/${token}`, {
-          password: formData.password
-        });
+        await axios.post(
+          `http://localhost:5001/api/auth/reset-password/${token}`,
+          { password: formData.password }
+        );
         
         setResetSuccess(true);
       } catch (error) {

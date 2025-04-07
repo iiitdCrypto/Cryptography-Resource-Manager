@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import { FaCheckCircle, FaTimesCircle, FaSpinner, FaEnvelope } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle, FaSpinner } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import OtpVerification from '../components/auth/OtpVerification';
 

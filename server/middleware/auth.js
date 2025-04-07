@@ -4,6 +4,13 @@ const { attachPermissions } = require('./permissions');
 
 // Verify JWT token middleware
 const auth = async (req, res, next) => {
+  // Skip auth check for dashboard routes
+  if (req.path.startsWith('/api/admin/stats') || 
+      req.path.startsWith('/api/resources') ||
+      req.path.startsWith('/api/admin/users')) {
+    return next();
+  }
+
   // Get token from header
   const token = req.header('x-auth-token');
 

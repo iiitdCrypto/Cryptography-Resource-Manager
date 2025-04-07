@@ -16,7 +16,7 @@ const Lectures = () => {
     const fetchLectures = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5000/api/lectures', {
+        const response = await axios.get('http://localhost:5001/api/lectures', {
           headers: {
             'x-auth-token': localStorage.getItem('token')
           }

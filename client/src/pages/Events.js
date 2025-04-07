@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { FaCalendarAlt, FaMapMarkerAlt, FaClock, FaBuilding, FaGlobe, FaSearch, FaFilter, FaSync, FaLaptopCode, FaChalkboardTeacher, FaTrophy, FaUsers } from 'react-icons/fa';
+import { FaCalendarAlt, FaMapMarkerAlt, FaBuilding, FaGlobe, FaSearch, FaFilter, FaSync, FaLaptopCode, FaChalkboardTeacher, FaTrophy, FaUsers } from 'react-icons/fa';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 
 // Create a custom axios instance for API calls
 const apiClient = axios.create({
-  baseURL: 'http://localhost:50001', 
+  baseURL: 'http://localhost:50011', 
   headers: {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*'

@@ -5,7 +5,7 @@ import { jwtDecode } from 'jwt-decode'; // Changed to use named import with curl
 const AuthContext = createContext();
 
 // Define the API URL - let's check if we're using the correct URL
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }) => {
   const verifyEmail = async (token) => {
     try {
       setError(null);
-      const res = await axios.get(`http://localhost:5000/api/auth/verify/${token}`);
+      const res = await axios.get(`http://localhost:5001/api/auth/verify/${token}`);
       return res.data;
     } catch (err) {
       setError(err.response?.data?.message || 'Email verification failed');

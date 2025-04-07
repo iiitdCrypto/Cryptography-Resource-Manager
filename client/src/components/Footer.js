@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { FaFacebookF, FaTwitter, FaLinkedin, FaInstagram, FaYoutube } from 'react-icons/fa';
+import footerLogo from '../images/footer-logo.png';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -12,7 +13,7 @@ const Footer = () => {
 
         <FooterContent>
           <FooterLeft>
-            <InstituteLogo src="../images/logo1.png" alt="IIIT Delhi Logo" />
+            <InstituteLogo src={footerLogo} alt="IIIT Delhi Logo" style={{  width: '200px', height: '40px', background: 'white', marginRight: '0.5rem' }}  />
           </FooterLeft>
           
           <FooterCenter>

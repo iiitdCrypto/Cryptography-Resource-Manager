@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
-import { FaArrowLeft, FaExclamationCircle, FaPlus, FaTimes, FaTrash } from 'react-icons/fa';
+import { FaArrowLeft, FaExclamationCircle, FaPlus, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 
 const EditResource = () => {
@@ -36,7 +36,7 @@ const EditResource = () => {
       
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:5000/api/resources/${id}`, {
+        const response = await axios.get(`http://localhost:5001/api/resources/${id}`, {
           headers: {
             'x-auth-token': localStorage.getItem('token')
           }
@@ -151,7 +151,7 @@ const EditResource = () => {
         const token = localStorage.getItem('token');
         
         await axios.put(
-          `http://localhost:5000/api/resources/${id}`,
+          `http://localhost:5001/api/resources/${id}`,
           formData,
           {
             headers: {
@@ -176,7 +176,7 @@ const EditResource = () => {
         const token = localStorage.getItem('token');
         
         await axios.delete(
-          `http://localhost:5000/api/resources/${id}`,
+          `http://localhost:5001/api/resources/${id}`,
           {
             headers: {
               'x-auth-token': token

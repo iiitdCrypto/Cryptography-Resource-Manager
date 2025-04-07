@@ -132,7 +132,7 @@ const Profile = () => {
         const token = localStorage.getItem('token');
         
         await axios.put(
-          'http://localhost:5000/api/users/profile',
+          'http://localhost:5001/api/users/profile',
           {
             name: `${profileData.name} ${profileData.surname}`.trim(),
             email: profileData.email
@@ -165,7 +165,7 @@ const Profile = () => {
         const token = localStorage.getItem('token');
         
         await axios.put(
-          'http://localhost:5000/api/users/password',
+          'http://localhost:5001/api/users/password',
           {
             currentPassword: passwordData.currentPassword,
             newPassword: passwordData.newPassword

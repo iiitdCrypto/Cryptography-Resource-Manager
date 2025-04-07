@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 // Remove or use the motion import if you're using framer-motion
@@ -8,7 +8,7 @@ const Home = () => {
   const [currentWord, setCurrentWord] = useState('');
   const [currentColor, setCurrentColor] = useState('');
   
-  const cryptoWords = [
+  const cryptoWords = useMemo(() => [
     'Encryption',
     'Decryption',
     'Hashing',
@@ -25,9 +25,9 @@ const Home = () => {
     'Data Encryption Standard (DES)',
     'Message Digest (MD5)',
     'SHA-256'
-  ];
+  ], []);
   
-  const colors = [
+  const colors = useMemo(() => [
     '#4285F4', // Google Blue
     '#EA4335', // Google Red
     '#FBBC05', // Google Yellow
@@ -35,7 +35,7 @@ const Home = () => {
     '#7B1FA2', // Purple
     '#0097A7', // Teal
     '#FF5722', // Deep Orange
-  ];
+  ], []);
   
   useEffect(() => {
     const wordInterval = setInterval(() => {
@@ -51,7 +51,7 @@ const Home = () => {
     setCurrentColor(colors[0]);
     
     return () => clearInterval(wordInterval);
-  }, []); // Add cryptoWords.length and colors.length to dependencies
+  }, [cryptoWords, colors]);
   
   return (
     <>

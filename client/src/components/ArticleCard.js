@@ -20,22 +20,22 @@ const ArticleCard = ({ article, isNewlyLoaded = false }) => {
   const [contentLoading, setContentLoading] = useState(isNewlyLoaded);
   
   // Add a slight delay to show the loading effect even for cached images
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      // Keep loading state for at least 500ms for a better visual effect
-      if (!imageError) {
-        const img = new Image();
-        img.src = imageUrl;
-        img.onload = () => setImageLoading(false);
-        img.onerror = () => {
-          setImageError(true);
-          setImageLoading(false);
-        };
-      }
-    }, 300);
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     // Keep loading state for at least 500ms for a better visual effect
+  //     if (!imageError) {
+  //       const img = new Image();
+  //       img.src = imageUrl;
+  //       img.onload = () => setImageLoading(false);
+  //       img.onerror = () => {
+  //         setImageError(true);
+  //         setImageLoading(false);
+  //       };
+  //     }
+  //   }, 300);
     
-    return () => clearTimeout(timer);
-  }, [imageUrl, imageError]);
+  //   return () => clearTimeout(timer);
+  // }, [imageUrl, imageError]);
   
   // Add a loading effect for newly loaded articles after scrolling
   useEffect(() => {
@@ -87,7 +87,7 @@ const ArticleCard = ({ article, isNewlyLoaded = false }) => {
   
   return (
     <CardContainer href={url} target="_blank" rel="noopener noreferrer">
-      <CardImageContainer>
+      {/* <CardImageContainer>
         {imageLoading ? (
           <ImageLoader>
             <LoaderPulse />
@@ -100,7 +100,7 @@ const ArticleCard = ({ article, isNewlyLoaded = false }) => {
           />
         )}
         <TypeBadge type={type}>{type}</TypeBadge>
-      </CardImageContainer>
+      </CardImageContainer> */}
       
       <CardContent>
         <CategoryTag style={{ color: categoryColor }}>

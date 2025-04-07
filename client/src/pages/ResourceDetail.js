@@ -18,12 +18,12 @@ const ResourceDetail = () => {
     const fetchResource = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:5000/api/resources/${id}`);
+        const response = await axios.get(`http://localhost:5001/api/resources/${id}`);
         setResource(response.data);
         
         // Check if resource is bookmarked by the user
         if (user) {
-          const bookmarksResponse = await axios.get('http://localhost:5000/api/bookmarks', {
+          const bookmarksResponse = await axios.get('http://localhost:5001/api/bookmarks', {
             headers: {
               'x-auth-token': localStorage.getItem('token')
             }
@@ -53,14 +53,14 @@ const ResourceDetail = () => {
     try {
       if (isBookmarked) {
         // Remove bookmark
-        await axios.delete(`http://localhost:5000/api/bookmarks/${id}`, {
+        await axios.delete(`http://localhost:5001/api/bookmarks/${id}`, {
           headers: {
             'x-auth-token': localStorage.getItem('token')
           }
         });
       } else {
         // Add bookmark
-        await axios.post('http://localhost:5000/api/bookmarks', 
+        await axios.post('http://localhost:5001/api/bookmarks', 
           { resourceId: id },
           {
             headers: {

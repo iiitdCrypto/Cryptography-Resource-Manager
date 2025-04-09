@@ -8,7 +8,7 @@ import Loader from '../components/Loader';
 import { Link } from 'react-router-dom';
 
 const Articles = () => {
-  const [articles, setArticles] = useState({ academic: [], news: [] });
+  const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,7 +44,7 @@ const Articles = () => {
       setLoading(true);
       console.log('Fetching articles for page:', pageNum);
       const response = await fetch(
-        `http://localhost:5001/api/articles/all?page=${pageNum}&pageSize=10&search=${searchTerm}&category=${category}`
+        `http://localhost:5001/api/articles/news?page=${pageNum}&pageSize=10&search=${searchTerm}&category=${category}`
       );
       
       if (!response.ok) {
@@ -57,19 +57,12 @@ const Articles = () => {
       if (data.success && data.articles) {
         setArticles(prevArticles => {
           if (pageNum === 1) {
-            return {
-              academic: data.articles.academic.items || [],
-              news: data.articles.news.items || []
-            };
+            return data.articles.items || [];
           }
-          
-          return {
-            academic: [...new Set([...prevArticles.academic, ...(data.articles.academic.items || [])])],
-            news: [...new Set([...prevArticles.news, ...(data.articles.news.items || [])])]
-          };
+          return [...new Set([...prevArticles, ...(data.articles.items || [])])];
         });
         
-        setHasMore(data.articles.academic.hasMore || data.articles.news.hasMore);
+        setHasMore(data.articles.hasMore);
         setPage(pageNum);
       } else {
         console.error('API returned unsuccessful response:', data);
@@ -125,8 +118,8 @@ const Articles = () => {
     <ArticlesContainer>
       <div className="container">
         <ArticlesHeader>
-          <h1>Cryptography Articles & News</h1>
-          <p>Stay updated with the latest research, news, and developments in cryptography</p>
+          <h1>Cryptography News Articles</h1>
+          <p>Stay updated with the latest news and developments in cryptography</p>
         </ArticlesHeader>
         
         <SearchFilterContainer>
@@ -159,47 +152,25 @@ const Articles = () => {
         
         {error && <ErrorMessage>{error}</ErrorMessage>}
         
-        <SectionsWrapper>
-          <Section>
-            <SectionHeader>
-              <h1>Academic</h1>
-            </SectionHeader>
-            <ScrollableList>
-              {articles.academic.map((article) => (
-                <ArticleItem
-                  key={article.id}
-                  onMouseEnter={() => setHoveredArticle(article)}
-                  onMouseLeave={() => setHoveredArticle(null)}
-                >
-                  <ArticleTitle>{article.title}</ArticleTitle>
-                  {hoveredArticle?.id === article.id && (
-                    <ArticleCard article={article} />
-                  )}
-                </ArticleItem>
-              ))}
-            </ScrollableList>
-          </Section>
-
-          <Section>
-            <SectionHeader>
-              <h1>News</h1>
-            </SectionHeader>
-            <ScrollableList>
-              {articles.news.map((article) => (
-                <ArticleItem
-                  key={article.id}
-                  onMouseEnter={() => setHoveredArticle(article)}
-                  onMouseLeave={() => setHoveredArticle(null)}
-                >
-                  <ArticleTitle>{article.title}</ArticleTitle>
-                  {hoveredArticle?.id === article.id && (
-                    <ArticleCard article={article} />
-                  )}
-                </ArticleItem>
-              ))}
-            </ScrollableList>
-          </Section>
-        </SectionsWrapper>
+        <Section>
+          <SectionHeader>
+            <h1>News Articles</h1>
+          </SectionHeader>
+          <ScrollableList>
+            {articles.map((article) => (
+              <ArticleItem
+                key={article.id}
+                onMouseEnter={() => setHoveredArticle(article)}
+                onMouseLeave={() => setHoveredArticle(null)}
+              >
+                <ArticleTitle>{article.title}</ArticleTitle>
+                {hoveredArticle?.id === article.id && (
+                  <ArticleCard article={article} />
+                )}
+              </ArticleItem>
+            ))}
+          </ScrollableList>
+        </Section>
         
         {loading && (
           <LoaderContainer>
@@ -382,14 +353,7 @@ const SectionHeader = styled.div`
 `;
 
 const SectionsWrapper = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
   margin-top: 2rem;
-  
-  @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
-    grid-template-columns: 1fr;
-  }
 `;
 
 const ScrollableList = styled.div`

@@ -73,11 +73,11 @@ const DashboardSidebar = ({ isOpen }) => {
       icon: <FaUserTie size={20} />,
       path: '/dashboard/professors'
     },
-    // {
-    //   title: 'Analytics',
-    //   icon: <FaChartBar size={20} />,
-    //   path: '/dashboard/analytics'
-    // },
+    {
+      title: 'Analytics',
+      icon: <FaChartBar size={20} />,
+      path: '/dashboard/analytics'
+    }
     // {
     //   title: 'Settings',
     //   icon: <FiSettings size={20} />,

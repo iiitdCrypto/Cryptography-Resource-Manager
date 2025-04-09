@@ -28,6 +28,9 @@ import ContentManagement from './components/dashboard/ContentManagement';
 import DashboardEvents from './components/dashboard/DashboardEvents';
 import DashboardHome from './components/dashboard/DashboardHome';
 import Professors from './components/dashboard/Professors';
+import Events from './pages/Events';
+import Lectures from './pages/Lectures';
+import CryptoIIITD from './pages/CryptoIIITD';
 
 function App() {
   return (
@@ -109,6 +112,30 @@ function App() {
               <Navbar />
               <main>
                 <Profile />
+              </main>
+              <Footer />
+            </>} />
+
+            <Route path="/events" element={<>
+              <Navbar />
+              <main>
+                <Events />
+              </main>
+              <Footer />
+            </>} />
+
+            <Route path="/lectures" element={<>
+              <Navbar />
+              <main>
+                <Lectures />
+              </main>
+              <Footer />
+            </>} />
+
+            <Route path="/about-cryptography" element={<>
+              <Navbar />
+              <main>
+                <CryptoIIITD />
               </main>
               <Footer />
             </>} />

@@ -156,7 +156,7 @@ const Navbar = () => {
             <NavItem active={isActive('/about-cryptography')}>
               <NavLink to="/about-cryptography" onClick={() => setIsOpen(false)}>
                 <FaInfoCircle />
-                <span>Crypto@IIITD</span>
+                <span>crypto@IIITD</span>
               </NavLink>
             </NavItem>
             

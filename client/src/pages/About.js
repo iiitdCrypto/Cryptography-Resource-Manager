@@ -127,7 +127,7 @@ const About = () => {
   return (
     <PageContainer>
       <PageHeader>
-        <h1>Crypto@IIITD</h1>
+        <h1>crypto-iiitd</h1>
         <p>Meet our professors and explore their cryptography research projects</p>
       </PageHeader>
       

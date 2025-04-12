@@ -1,7 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import axios from 'axios';
 
 const CryptoIIITD = () => {
+  const [professors, setProfessors] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
+
+  useEffect(() => {
+    const fetchProfessors = async () => {
+      try {
+        const response = await axios.get('/api/professors');
+        setProfessors(response.data);
+      } catch (error) {
+        console.error('Error fetching professors:', error);
+      }
+    };
+
+    fetchProfessors();
+  }, []);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await axios.get('/api/projects');
+        setProjects(response.data);
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
+  const handleProjectSelect = (event) => {
+    const project = projects.find(p => p.id === event.target.value);
+    setSelectedProject(project);
+  };
+
+  const getProjectStatus = (startDate, endDate) => {
+    const now = new Date();
+    const end = new Date(endDate);
+    return now > end ? 'Completed' : 'Ongoing';
+  };
+
   return (
     <PageContainer>
       <Header>
@@ -62,22 +104,89 @@ const CryptoIIITD = () => {
       </ContentSection>
 
       <ContentSection>
-        <SectionTitle>Get Involved</SectionTitle>
-        <Description>
-          Whether you're a student, researcher, or industry partner, there are many ways to get
-          involved with our cryptography program. Contact us to learn more about:
-        </Description>
-        <ContactInfo>
-          <InfoItem>
-            <strong>Email:</strong> crypto@iiitd.ac.in
-          </InfoItem>
-          <InfoItem>
-            <strong>Location:</strong> IIIT-Delhi, Okhla Industrial Estate, Phase III
-          </InfoItem>
-          <InfoItem>
-            <strong>Phone:</strong> +91-11-26907XXX
-          </InfoItem>
-        </ContactInfo>
+        <SectionTitle>Professors</SectionTitle>
+        <ProfessorList>
+          {professors.map((professor) => (
+            <ProfessorItem key={professor.id}>
+              <ProfessorImage 
+                src={professor.image_url || '/default-professor.png'} 
+                alt={professor.name}
+              />
+              <ProfessorName>{professor.name}</ProfessorName>
+              <ProfessorDesignation>{professor.title}</ProfessorDesignation>
+              <p>{professor.specialization}</p>
+              <ProfessorContact>
+                <a href={`mailto:${professor.email}`}>Email: {professor.email}</a>
+                {professor.website_url && (
+                  <a href={professor.website_url} target="_blank" rel="noopener noreferrer">
+                    Website
+                  </a>
+                )}
+              </ProfessorContact>
+            </ProfessorItem>
+          ))}
+        </ProfessorList>
+      </ContentSection>
+
+      <ContentSection>
+        <SectionTitle>Projects</SectionTitle>
+        <ProjectSelector>
+          <SelectWrapper>
+            <select onChange={handleProjectSelect} defaultValue="">
+              <option value="" disabled>Select a Project</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.title}
+                </option>
+              ))}
+            </select>
+          </SelectWrapper>
+
+          {selectedProject && (
+            <ProjectDetails>
+              <ProjectHeader>
+                <ProjectTitle>{selectedProject.title}</ProjectTitle>
+                <ProjectType>{selectedProject.type}</ProjectType>
+              </ProjectHeader>
+
+              <ProjectTimeframe>
+                {new Date(selectedProject.startDate).toLocaleDateString()} - {new Date(selectedProject.endDate).toLocaleDateString()}
+                <ProjectStatus>
+                  ({getProjectStatus(selectedProject.startDate, selectedProject.endDate)})
+                </ProjectStatus>
+              </ProjectTimeframe>
+
+              <ProjectDescription>{selectedProject.description}</ProjectDescription>
+
+              <ProjectTeam>
+                <TeamSection>
+                  <TeamTitle>Project Members:</TeamTitle>
+                  <MembersList>
+                    {selectedProject.members.map((member, index) => (
+                      <MemberItem key={index}>{member}</MemberItem>
+                    ))}
+                  </MembersList>
+                </TeamSection>
+
+                <TeamSection>
+                  <TeamTitle>Project Guide:</TeamTitle>
+                  <MemberItem>{selectedProject.professor}</MemberItem>
+                </TeamSection>
+              </ProjectTeam>
+
+              {selectedProject.technologies && (
+                <TechStack>
+                  <TeamTitle>Technologies:</TeamTitle>
+                  <TechList>
+                    {selectedProject.technologies.map((tech, index) => (
+                      <TechItem key={index}>{tech}</TechItem>
+                    ))}
+                  </TechList>
+                </TechStack>
+              )}
+            </ProjectDetails>
+          )}
+        </ProjectSelector>
       </ContentSection>
     </PageContainer>
   );
@@ -170,20 +279,178 @@ const FocusArea = styled.div`
   }
 `;
 
-const ContactInfo = styled.div`
-  background: ${({ theme }) => theme.colors.backgroundLight};
-  padding: 1.5rem;
-  border-radius: 8px;
+const ProfessorList = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
   margin-top: 1rem;
 `;
 
-const InfoItem = styled.p`
-  margin-bottom: 0.8rem;
-  color: ${({ theme }) => theme.colors.text};
+const ProfessorItem = styled.div`
+  background: ${({ theme }) => theme.colors.backgroundLight};
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: ${({ theme }) => theme.shadows.medium};
+  transition: transform 0.2s;
   
-  strong {
-    color: ${({ theme }) => theme.colors.primary};
+  &:hover {
+    transform: translateY(-5px);
   }
+`;
+
+const ProfessorImage = styled.img`
+  width: 120px;
+  height: 120px;
+  border-radius: 60px;
+  object-fit: cover;
+  margin-bottom: 1rem;
+  border: 3px solid ${({ theme }) => theme.colors.primary};
+`;
+
+const ProfessorName = styled.h3`
+  color: ${({ theme }) => theme.colors.primary};
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+`;
+
+const ProfessorDesignation = styled.p`
+  color: ${({ theme }) => theme.colors.textLight};
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+`;
+
+const ProfessorContact = styled.div`
+  margin-top: 1rem;
+  
+  a {
+    color: ${({ theme }) => theme.colors.primary};
+    text-decoration: none;
+    display: block;
+    margin-bottom: 0.5rem;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+`;
+
+const ProjectSelector = styled.div`
+  margin-top: 2rem;
+`;
+
+const SelectWrapper = styled.div`
+  margin-bottom: 2rem;
+  
+  select {
+    width: 100%;
+    padding: 0.8rem;
+    border-radius: 6px;
+    border: 1px solid ${({ theme }) => theme.colors.border};
+    font-size: 1rem;
+    background: white;
+    color: ${({ theme }) => theme.colors.text};
+    
+    &:focus {
+      outline: none;
+      border-color: ${({ theme }) => theme.colors.primary};
+    }
+  }
+`;
+
+const ProjectDetails = styled.div`
+  background: ${({ theme }) => theme.colors.backgroundLight};
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: ${({ theme }) => theme.shadows.small};
+`;
+
+const ProjectHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+`;
+
+const ProjectTitle = styled.h3`
+  color: ${({ theme }) => theme.colors.primary};
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+  flex: 1;
+`;
+
+const ProjectType = styled.span`
+  background: ${({ theme }) => theme.colors.secondary};
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 15px;
+  font-size: 0.9rem;
+`;
+
+const ProjectTimeframe = styled.div`
+  color: ${({ theme }) => theme.colors.textLight};
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+`;
+
+const ProjectStatus = styled.span`
+  margin-left: 0.5rem;
+  font-weight: 500;
+`;
+
+const ProjectDescription = styled.p`
+  color: ${({ theme }) => theme.colors.text};
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  font-size: 1.1rem;
+`;
+
+const ProjectTeam = styled.div`
+  margin: 2rem 0;
+`;
+
+const TeamSection = styled.div`
+  margin-bottom: 1.5rem;
+`;
+
+const TeamTitle = styled.h4`
+  color: ${({ theme }) => theme.colors.primary};
+  margin-bottom: 0.8rem;
+  font-size: 1.1rem;
+`;
+
+const MembersList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+`;
+
+const MemberItem = styled.span`
+  background: ${({ theme }) => theme.colors.backgroundLight};
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const TechStack = styled.div`
+  h4 {
+    color: ${({ theme }) => theme.colors.primary};
+    margin-bottom: 0.8rem;
+  }
+`;
+
+const TechList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+`;
+
+const TechItem = styled.span`
+  background: ${({ theme }) => theme.colors.primary};
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
 `;
 
 export default CryptoIIITD;

@@ -27,10 +27,11 @@ import Analytics from './components/dashboard/Analytics';
 import ContentManagement from './components/dashboard/ContentManagement';
 import DashboardEvents from './components/dashboard/DashboardEvents';
 import DashboardHome from './components/dashboard/DashboardHome';
-import Professors from './components/dashboard/Professors';
+import Professors from './components/dashboard/crypto-iiitd';
 import Events from './pages/Events';
 import Lectures from './pages/Lectures';
 import CryptoIIITD from './pages/CryptoIIITD';
+// import CryptoIIITD from './components/dashboard/CryptoIIITD';
 
 function App() {
   return (
@@ -47,8 +48,9 @@ function App() {
               <Route path="content" element={<ContentManagement />} />
               <Route path="resources" element={<Dashboard />} />
               <Route path="events" element={<DashboardEvents />} />
-              <Route path="professors" element={<Professors />} />
+              <Route path="crypto-iiitd" element={<Professors />} />
               <Route path="settings" element={<Profile />} />
+              {/* <Route path="crypto-iiitd" element={<CryptoIIITD />} /> */}
             </Route>
             
             {/* Regular Routes with Navbar and Footer */}

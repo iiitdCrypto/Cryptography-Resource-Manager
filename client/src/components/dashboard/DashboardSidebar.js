@@ -34,7 +34,7 @@ const DashboardContent = () => {
             <p>Schedule and manage cryptography-related events, workshops, and meetings. Create new events, update details, or cancel existing events.</p>
           </ManualSection>
           <ManualSection>
-            <h3>Professors</h3>
+            <h3>crypto-iiitd</h3>
             <p>Manage professor profiles and their associated courses. Add new professors, update their information, or remove them from the system.</p>
           </ManualSection>
         </UserManual>
@@ -69,9 +69,9 @@ const DashboardSidebar = ({ isOpen }) => {
       path: '/dashboard/events'
     },
     {
-      title: 'Professors',
+      title: 'Crypto IIITD',
       icon: <FaUserTie size={20} />,
-      path: '/dashboard/professors'
+      path: '/dashboard/crypto-iiitd'
     },
     {
       title: 'Analytics',

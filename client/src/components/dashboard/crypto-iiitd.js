@@ -4,19 +4,16 @@ import axios from 'axios';
 import { FaPlus, FaEdit, FaTrash, FaSpinner, FaExclamationTriangle, FaCheck } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 
-const Professors = () => {
+const CryptoIIITDDashboard = () => {
   const { user } = useAuth();
   const [professors, setProfessors] = useState([]);
-  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   
   // Form states
   const [showProfessorForm, setShowProfessorForm] = useState(false);
-  const [showProjectForm, setShowProjectForm] = useState(false);
   const [editingProfessor, setEditingProfessor] = useState(null);
-  const [selectedProfessor, setSelectedProfessor] = useState(null);
   
   // Professor form state
   const [professorForm, setProfessorForm] = useState({
@@ -30,18 +27,24 @@ const Professors = () => {
     imagePreview: null
   });
   
-  // Project form state
+  // Project states
+  const [projects, setProjects] = useState([]);
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  const [editingProject, setEditingProject] = useState(null);
   const [projectForm, setProjectForm] = useState({
-    professorId: '',
-    projectId: '',
-    status: 'in_progress',
-    year: new Date().getFullYear()
+    title: '',
+    type: 'IP',
+    description: '', // Add this line
+    startDate: '',
+    endDate: '',
+    status: 'ongoing',
+    members: [''],
+    professorId: ''
   });
-  
+
   // Fetch professors on component mount
   useEffect(() => {
     fetchProfessors();
-    fetchProjects();
   }, []);
   
   // Fetch professors
@@ -55,16 +58,6 @@ const Professors = () => {
       console.error('Error fetching professors:', err);
       setError('Failed to load professors. Please try again.');
       setLoading(false);
-    }
-  };
-  
-  // Fetch projects
-  const fetchProjects = async () => {
-    try {
-      const response = await axios.get('/api/projects');
-      setProjects(response.data);
-    } catch (err) {
-      console.error('Error fetching projects:', err);
     }
   };
   
@@ -89,15 +82,6 @@ const Professors = () => {
     }
   };
   
-  // Handle project form input change
-  const handleProjectInputChange = (e) => {
-    const { name, value } = e.target;
-    setProjectForm({
-      ...projectForm,
-      [name]: value
-    });
-  };
-  
   // Reset professor form
   const resetProfessorForm = () => {
     setProfessorForm({
@@ -111,16 +95,6 @@ const Professors = () => {
       imagePreview: null
     });
     setEditingProfessor(null);
-  };
-  
-  // Reset project form
-  const resetProjectForm = () => {
-    setProjectForm({
-      professorId: selectedProfessor ? selectedProfessor.id : '',
-      projectId: '',
-      status: 'in_progress',
-      year: new Date().getFullYear()
-    });
   };
   
   // Open professor form for adding
@@ -143,16 +117,6 @@ const Professors = () => {
     });
     setEditingProfessor(professor);
     setShowProfessorForm(true);
-  };
-  
-  // Open project form
-  const openAddProjectForm = (professor) => {
-    setSelectedProfessor(professor);
-    setProjectForm({
-      ...projectForm,
-      professorId: professor.id
-    });
-    setShowProjectForm(true);
   };
   
   // Submit professor form
@@ -212,41 +176,6 @@ const Professors = () => {
     }
   };
   
-  // Submit project form
-  const handleProjectSubmit = async (e) => {
-    e.preventDefault();
-    
-    try {
-      setLoading(true);
-      
-      await axios.post(`/api/professors/${projectForm.professorId}/projects`, {
-        projectId: projectForm.projectId,
-        status: projectForm.status,
-        year: projectForm.year
-      });
-      
-      setSuccess('Project added to professor successfully!');
-      
-      // Refresh professors list
-      fetchProfessors();
-      
-      // Reset form and close modal
-      resetProjectForm();
-      setShowProjectForm(false);
-      setLoading(false);
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      console.error('Error adding project to professor:', err);
-      setError('Failed to add project to professor. Please try again.');
-      setLoading(false);
-      
-      // Clear error message after 3 seconds
-      setTimeout(() => setError(null), 3000);
-    }
-  };
-  
   // Delete professor
   const handleDeleteProfessor = async (professorId) => {
     if (window.confirm('Are you sure you want to delete this professor? This action cannot be undone.')) {
@@ -273,7 +202,60 @@ const Professors = () => {
       }
     }
   };
-  
+
+  // Project handlers
+  const handleProjectInputChange = (e) => {
+    const { name, value } = e.target;
+    setProjectForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleMemberChange = (index, value) => {
+    const newMembers = [...projectForm.members];
+    newMembers[index] = value;
+    setProjectForm(prev => ({
+      ...prev,
+      members: newMembers
+    }));
+  };
+
+  const addMember = () => {
+    setProjectForm(prev => ({
+      ...prev,
+      members: [...prev.members, '']
+    }));
+  };
+
+  const removeMember = (index) => {
+    setProjectForm(prev => ({
+      ...prev,
+      members: prev.members.filter((_, i) => i !== index)
+    }));
+  };
+
+  const resetProjectForm = () => {
+    setProjectForm({
+      title: '',
+      type: 'IP',
+      description: '', // Add this line
+      startDate: '',
+      endDate: '',
+      status: 'ongoing',
+      members: [''],
+      professorId: ''
+    });
+    setEditingProject(null);
+  };
+
+  const handleProjectSubmit = async (e) => {
+    e.preventDefault();
+    // TODO: Implement project submission logic
+    setShowProjectForm(false);
+    resetProjectForm();
+  };
+
   return (
     <Container>
       <Header>
@@ -295,7 +277,7 @@ const Professors = () => {
         </Alert>
       )}
       
-      {loading && !showProfessorForm && !showProjectForm ? (
+      {loading && !showProfessorForm ? (
         <LoadingContainer>
           <FaSpinner className="spinner" />
           <p>Loading professors...</p>
@@ -303,9 +285,6 @@ const Professors = () => {
       ) : professors.length === 0 ? (
         <EmptyState>
           <p>No professors found. Add your first professor to get started.</p>
-          <AddButton onClick={openAddProfessorForm}>
-            <FaPlus /> Add Professor
-          </AddButton>
         </EmptyState>
       ) : (
         <ProfessorsList>
@@ -325,9 +304,6 @@ const Professors = () => {
               <ProfessorActions>
                 <ActionButton onClick={() => openEditProfessorForm(professor)}>
                   <FaEdit /> Edit
-                </ActionButton>
-                <ActionButton onClick={() => openAddProjectForm(professor)}>
-                  <FaPlus /> Add Project
                 </ActionButton>
                 <ActionButton danger onClick={() => handleDeleteProfessor(professor.id)}>
                   <FaTrash /> Delete
@@ -451,77 +427,173 @@ const Professors = () => {
           </ModalContent>
         </Modal>
       )}
-      
-      {/* Project Form Modal */}
-      {showProjectForm && selectedProfessor && (
-        <Modal>
-          <ModalContent>
-            <ModalHeader>
-              <h3>Add Project to {selectedProfessor.name}</h3>
-              <CloseButton onClick={() => setShowProjectForm(false)}>×</CloseButton>
-            </ModalHeader>
-            
-            <Form onSubmit={handleProjectSubmit}>
-              <FormGroup>
-                <Label htmlFor="projectId">Project *</Label>
-                <Select
-                  id="projectId"
-                  name="projectId"
-                  value={projectForm.projectId}
-                  onChange={handleProjectInputChange}
-                  required
-                >
-                  <option value="">Select a project</option>
-                  {projects.map(project => (
-                    <option key={project.id} value={project.id}>
-                      {project.title} ({project.type})
-                    </option>
+
+      {/* Projects Section */}
+      <Section>
+        <Header>
+          <h2>Manage Projects</h2>
+          <AddButton onClick={() => setShowProjectForm(true)}>
+            <FaPlus /> Add Project
+          </AddButton>
+        </Header>
+
+        {/* Project Form Modal */}
+        {showProjectForm && (
+          <Modal>
+            <ModalContent>
+              <ModalHeader>
+                <h3>{editingProject ? 'Edit Project' : 'Add New Project'}</h3>
+                <CloseButton onClick={() => setShowProjectForm(false)}>×</CloseButton>
+              </ModalHeader>
+
+              <Form onSubmit={handleProjectSubmit}>
+                <FormGroup>
+                  <Label htmlFor="title">Project Title *</Label>
+                  <Input
+                    type="text"
+                    id="title"
+                    name="title"
+                    value={projectForm.title}
+                    onChange={handleProjectInputChange}
+                    required
+                  />
+                </FormGroup>
+
+                <FormGroup>
+                  <Label htmlFor="type">Project Type *</Label>
+                  <Select
+                    id="type"
+                    name="type"
+                    value={projectForm.type}
+                    onChange={handleProjectInputChange}
+                    required
+                  >
+                    <option value="IP">IP</option>
+                    <option value="IS">IS</option>
+                    <option value="BTP">BTP</option>
+                    <option value="Capstone">Capstone</option>
+                    <option value="Thesis">Thesis</option>
+                  </Select>
+                </FormGroup>
+
+                <FormGroup>
+                  <Label htmlFor="description">Project Description</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    value={projectForm.description}
+                    onChange={handleProjectInputChange}
+                    rows="4"
+                    placeholder="Enter project description..."
+                  />
+                </FormGroup>
+
+                <FormGroup>
+                  <Label>Project Duration</Label>
+                  <DateContainer>
+                    <div>
+                      <Label htmlFor="startDate">Start Date *</Label>
+                      <Input
+                        type="date"
+                        id="startDate"
+                        name="startDate"
+                        value={projectForm.startDate}
+                        onChange={handleProjectInputChange}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="endDate">End Date</Label>
+                      <Input
+                        type="date"
+                        id="endDate"
+                        name="endDate"
+                        value={projectForm.endDate}
+                        onChange={handleProjectInputChange}
+                        disabled={projectForm.status === 'ongoing'}
+                      />
+                    </div>
+                  </DateContainer>
+                  <StatusContainer>
+                    <Label>Project Status</Label>
+                    <RadioGroup>
+                      <RadioLabel>
+                        <input
+                          type="radio"
+                          name="status"
+                          value="ongoing"
+                          checked={projectForm.status === 'ongoing'}
+                          onChange={handleProjectInputChange}
+                        />
+                        Ongoing
+                      </RadioLabel>
+                      <RadioLabel>
+                        <input
+                          type="radio"
+                          name="status"
+                          value="completed"
+                          checked={projectForm.status === 'completed'}
+                          onChange={handleProjectInputChange}
+                        />
+                        Completed
+                      </RadioLabel>
+                    </RadioGroup>
+                  </StatusContainer>
+                </FormGroup>
+
+                <FormGroup>
+                  <Label>Project Members</Label>
+                  {projectForm.members.map((member, index) => (
+                    <MemberInputContainer key={index}>
+                      <Input
+                        type="text"
+                        value={member}
+                        onChange={(e) => handleMemberChange(index, e.target.value)}
+                        placeholder="Enter member name"
+                      />
+                      {index > 0 && (
+                        <RemoveButton type="button" onClick={() => removeMember(index)}>
+                          <FaTrash />
+                        </RemoveButton>
+                      )}
+                    </MemberInputContainer>
                   ))}
-                </Select>
-              </FormGroup>
-              
-              <FormGroup>
-                <Label htmlFor="status">Status *</Label>
-                <Select
-                  id="status"
-                  name="status"
-                  value={projectForm.status}
-                  onChange={handleProjectInputChange}
-                  required
-                >
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                  <option value="updating">Updating</option>
-                </Select>
-              </FormGroup>
-              
-              <FormGroup>
-                <Label htmlFor="year">Year *</Label>
-                <Input
-                  type="number"
-                  id="year"
-                  name="year"
-                  value={projectForm.year}
-                  onChange={handleProjectInputChange}
-                  min="2000"
-                  max="2100"
-                  required
-                />
-              </FormGroup>
-              
-              <ButtonGroup>
-                <CancelButton type="button" onClick={() => setShowProjectForm(false)}>
-                  Cancel
-                </CancelButton>
-                <SubmitButton type="submit" disabled={loading}>
-                  {loading ? <FaSpinner className="spinner" /> : null}
-                  Add Project
-                </SubmitButton>
-              </ButtonGroup>
-            </Form>
-          </ModalContent>
-        </Modal>
-      )}
+                  <AddMemberButton type="button" onClick={addMember}>
+                    <FaPlus /> Add Member
+                  </AddMemberButton>
+                </FormGroup>
+
+                <FormGroup>
+                  <Label htmlFor="professorId">Professor/Guide *</Label>
+                  <Select
+                    id="professorId"
+                    name="professorId"
+                    value={projectForm.professorId}
+                    onChange={handleProjectInputChange}
+                    required
+                  >
+                    <option value="">Select Professor</option>
+                    {professors.map(professor => (
+                      <option key={professor.id} value={professor.id}>
+                        {professor.name}
+                      </option>
+                    ))}
+                  </Select>
+                </FormGroup>
+
+                <ButtonGroup>
+                  <CancelButton type="button" onClick={() => setShowProjectForm(false)}>
+                    Cancel
+                  </CancelButton>
+                  <SubmitButton type="submit">
+                    {editingProject ? 'Update Project' : 'Add Project'}
+                  </SubmitButton>
+                </ButtonGroup>
+              </Form>
+            </ModalContent>
+          </Modal>
+        )}
+      </Section>
     </Container>
   );
 };
@@ -797,21 +869,6 @@ const Textarea = styled.textarea`
   }
 `;
 
-const Select = styled.select`
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 4px;
-  font-size: 1rem;
-  background-color: white;
-  
-  &:focus {
-    outline: none;
-    border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryLight};
-  }
-`;
-
 const FileInput = styled.input`
   width: 100%;
   padding: 0.5rem 0;
@@ -879,4 +936,86 @@ const SubmitButton = styled(Button)`
   }
 `;
 
-export default Professors;
+const Section = styled.section`
+  margin-top: 2rem;
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 4px;
+  font-size: 1rem;
+  
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.primaryLight};
+  }
+`;
+
+const DateContainer = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+`;
+
+const CheckboxContainer = styled.div`
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const MemberInputContainer = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+`;
+
+const RemoveButton = styled.button`
+  padding: 0.75rem;
+  background-color: #FEE8E7;
+  color: #D93025;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  
+  &:hover {
+    background-color: #FDCCCB;
+  }
+`;
+
+const AddMemberButton = styled(Button)`
+  background-color: ${({ theme }) => theme.colors.primaryLight};
+  color: ${({ theme }) => theme.colors.primary};
+  border: none;
+  margin-top: 0.5rem;
+  
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.primaryLighter};
+  }
+`;
+
+const StatusContainer = styled.div`
+  margin-top: 1rem;
+`;
+
+const RadioGroup = styled.div`
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+`;
+
+const RadioLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  
+  input[type="radio"] {
+    cursor: pointer;
+  }
+`;
+
+export default CryptoIIITDDashboard;

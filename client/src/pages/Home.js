@@ -70,9 +70,6 @@ const Home = () => {
               <PrimaryButton to="/resources">
                 Explore Resources
               </PrimaryButton>
-              <SecondaryButton to="/about">
-                Learn More
-              </SecondaryButton>
             </ButtonContainer>
           </HeroContent>
         </div>
@@ -122,21 +119,21 @@ const Home = () => {
           <SectionTitle>Popular Resources</SectionTitle>
           <ResourcesGrid>
             <ResourceCard>
-              <ResourceImage src="/images/placeholder.jpg" alt="RSA Algorithm" />
+              <ResourceImage src="https://placehold.co/400x180/2A4C7D/FFFFFF/png?text=RSA+Algorithm" alt="RSA Algorithm" />
               <ResourceTitle>RSA Algorithm Explained</ResourceTitle>
               <ResourceCategory>Asymmetric Encryption</ResourceCategory>
               <ResourceLink to="/resources/videos/rsa-algorithm">View Resource</ResourceLink>
             </ResourceCard>
             
             <ResourceCard>
-              <ResourceImage src="/images/placeholder.jpg" alt="AES Encryption" />
+              <ResourceImage src="https://placehold.co/400x180/1A936F/FFFFFF/png?text=AES+Encryption" alt="AES Encryption" />
               <ResourceTitle>AES Encryption Deep Dive</ResourceTitle>
               <ResourceCategory>Symmetric Encryption</ResourceCategory>
               <ResourceLink to="/resources/videos/aes-encryption">View Resource</ResourceLink>
             </ResourceCard>
             
             <ResourceCard>
-              <ResourceImage src="/images/placeholder.jpg" alt="Blockchain Cryptography" />
+              <ResourceImage src="https://placehold.co/400x180/88498F/FFFFFF/png?text=Blockchain" alt="Blockchain Cryptography" />
               <ResourceTitle>Blockchain Cryptography Basics</ResourceTitle>
               <ResourceCategory>Blockchain</ResourceCategory>
               <ResourceLink to="/resources/notes/blockchain-crypto">View Resource</ResourceLink>
@@ -282,17 +279,6 @@ const PrimaryButton = styled(Button)`
   
   &:hover {
     background-color: ${({ theme }) => theme.colors.primaryDark};
-    transform: translateY(-2px);
-  }
-`;
-
-const SecondaryButton = styled(Button)`
-  background-color: transparent;
-  color: ${({ theme }) => theme.colors.primary};
-  border: 1px solid ${({ theme }) => theme.colors.primary};
-  
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.primaryLight};
     transform: translateY(-2px);
   }
 `;

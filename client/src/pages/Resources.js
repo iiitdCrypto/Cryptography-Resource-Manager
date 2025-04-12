@@ -23,7 +23,7 @@ const Resources = () => {
     const fetchResources = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5000/api/resources');
+        const response = await axios.get('http://localhost:5001/api/resources');
         setResources(response.data);
         
         // Extract unique tags from resources

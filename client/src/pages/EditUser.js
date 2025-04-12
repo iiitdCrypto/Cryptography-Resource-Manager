@@ -30,7 +30,7 @@ const EditUser = () => {
       
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:5000/api/admin/users/${id}`, {
+        const response = await axios.get(`http://localhost:5001/api/admin/users/${id}`, {
           headers: {
             'x-auth-token': localStorage.getItem('token')
           }
@@ -97,7 +97,7 @@ const EditUser = () => {
         const token = localStorage.getItem('token');
         
         await axios.put(
-          `http://localhost:5000/api/admin/users/${id}`,
+          `http://localhost:5001/api/admin/users/${id}`,
           formData,
           {
             headers: {

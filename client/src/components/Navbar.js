@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
+import headerLogo from '../images/header-logo.png';
 import { 
   FaLock, 
   FaUser, 
@@ -77,10 +78,11 @@ const Navbar = () => {
       <div className="container">
         <NavbarContent>
           <Logo to="/">
-            <LogoIcon>
-              <FaLock />
-            </LogoIcon>
-            <LogoText>CryptoRM</LogoText>
+            {/* <LogoIcon> */}
+              {/* <FaLock /> */}
+            {/* </LogoIcon> */}
+            <img src={headerLogo} alt="Logo" style={{ width: '90px', height: '40px', marginRight: '0.5rem' }} />
+            <LogoText></LogoText>
           </Logo>
 
           <SearchContainer>
@@ -151,10 +153,10 @@ const Navbar = () => {
               </NavLink>
             </NavItem>
             
-            <NavItem active={isActive('/about')}>
-              <NavLink to="/about" onClick={() => setIsOpen(false)}>
+            <NavItem active={isActive('/about-cryptography')}>
+              <NavLink to="/about-cryptography" onClick={() => setIsOpen(false)}>
                 <FaInfoCircle />
-                <span>Crypto@IIITD</span>
+                <span>crypto@IIITD</span>
               </NavLink>
             </NavItem>
             

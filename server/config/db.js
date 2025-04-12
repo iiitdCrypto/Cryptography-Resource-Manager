@@ -3,7 +3,6 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 
-// Create a connection pool
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
@@ -15,6 +14,16 @@ const pool = mysql.createPool({
   connectTimeout: 60000,
   multipleStatements: true // Enable multiple statements for triggers
 });
+
+// Test connection
+pool.getConnection()
+  .then(connection => {
+    console.log('Database connection pool initialized successfully');
+    connection.release();
+  })
+  .catch(err => {
+    console.error('Error initializing database pool:', err);
+  });
 
 // Test the connection and create database if it doesn't exist
 const connectDB = async () => {

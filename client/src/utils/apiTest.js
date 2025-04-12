@@ -5,7 +5,7 @@
  * for authentication and user management.
  */
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
 // Test registration endpoint
 export const testRegistration = async (userData) => {

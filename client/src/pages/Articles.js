@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 // Remove axios if not using it directly
-// import axios from 'axios';
+import axios from 'axios';
 import styled from 'styled-components';
 import { FaSearch, FaFilter } from 'react-icons/fa';
 import ArticleCard from '../components/ArticleCard';
 import Loader from '../components/Loader';
+import { Link } from 'react-router-dom';
 
 const Articles = () => {
   const [articles, setArticles] = useState([]);
@@ -14,238 +15,72 @@ const Articles = () => {
   const [category, setCategory] = useState('all');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [hoveredArticle, setHoveredArticle] = useState(null);
   const observer = useRef();
+  const articleObserver = useRef(
+    new IntersectionObserver(
+      entries => {
+        const first = entries[0];
+        if (first.isIntersecting) {
+          loadMoreArticles();
+        }
+      },
+      { threshold: 1 }
+    )
+  );
   
   const categories = [
     { id: 'all', name: 'All' },
     { id: 'cryptography', name: 'Cryptography' },
     { id: 'cryptanalysis', name: 'Cryptanalysis' },
-    { id: 'blockchain', name: 'Blockchain' },
     { id: 'security', name: 'Security' },
-    { id: 'encryption', name: 'Encryption' },
-    { id: 'algorithms', name: 'Algorithms' }
+    { id: 'blockchain', name: 'Blockchain' }
   ];
   // Remove the newlyLoadedArticles state since we'll use a single loader
   
   // Function to fetch articles from multiple sources
-  const fetchArticles = useCallback(async (pageNum = 1, search = '', cat = 'all') => {
-    if (pageNum === 1) {
-      setArticles([]);
-    }
-    
-    setLoading(true);
-    setError(null);
-    
-    // Add a slight delay to show the loader for at least 750ms
-    const startTime = Date.now();
-    
-    // Generate a larger set of mock articles for better testing
-    const generateMockArticles = (count, startIndex = 0) => {
-      // Real cryptography topics and resources
-      const articleData = [
-        {
-          title: "Understanding RSA Algorithm: Public Key Cryptography Explained",
-          description: "A comprehensive guide to RSA encryption, one of the first practical public-key cryptosystems widely used for secure data transmission.",
-          url: "https://en.wikipedia.org/wiki/RSA_(cryptosystem)",
-          category: "algorithms",
-          source: "Cryptography Journal",
-          type: "academic",
-          imageUrl: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-        },
-        {
-          title: "AES Encryption: How the Advanced Encryption Standard Works",
-          description: "Detailed explanation of the Advanced Encryption Standard (AES), a specification for the encryption of electronic data established by the U.S. NIST.",
-          url: "https://www.nist.gov/publications/advanced-encryption-standard-aes",
-          category: "encryption",
-          source: "NIST Publications",
-          type: "academic",
-          imageUrl: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-        },
-        {
-          title: "Blockchain Technology: Beyond Cryptocurrency",
-          description: "Exploring how blockchain technology provides a secure, decentralized ledger for transactions beyond just cryptocurrency applications.",
-          url: "https://www.ibm.com/topics/blockchain",
-          category: "blockchain",
-          source: "IBM Research",
-          type: "news",
-          imageUrl: "https://images.unsplash.com/photo-1639762681057-408e52192e55?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-        },
-        {
-          title: "Quantum Cryptography: Preparing for the Post-Quantum Era",
-          description: "How researchers are developing quantum-resistant algorithms to protect against future quantum computing threats to current encryption methods.",
-          url: "https://www.ncsc.gov.uk/whitepaper/quantum-safe-cryptography",
-          category: "cryptography",
-          source: "National Cyber Security Centre",
-          type: "academic",
-          imageUrl: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-        },
-        {
-          title: "Side-Channel Attacks: The Hidden Threat to Cryptographic Systems",
-          description: "Analysis of side-channel attacks that exploit information gained from the physical implementation of a cryptosystem rather than brute force.",
-          url: "https://csrc.nist.gov/Projects/Side-Channel-Analysis",
-          category: "cryptanalysis",
-          source: "Security Weekly",
-          type: "news",
-          imageUrl: "https://images.unsplash.com/photo-1563089145-599997674d42?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-        },
-        {
-          title: "Zero-Knowledge Proofs: Proving Knowledge Without Revealing It",
-          description: "How zero-knowledge proofs allow one party to prove to another that a statement is true without revealing any information beyond the validity of the statement.",
-          url: "https://zkp.science/",
-          category: "cryptography",
-          source: "Cryptography Journal",
-          type: "academic",
-          imageUrl: "https://images.unsplash.com/photo-1633265486064-086b219458ec?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-        },
-        {
-          title: "Implementing Secure Password Storage with Bcrypt",
-          description: "Best practices for securely storing passwords using the bcrypt hashing function to protect user credentials in the event of a data breach.",
-          url: "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html",
-          category: "security",
-          source: "OWASP Foundation",
-          type: "news",
-          imageUrl: "https://images.unsplash.com/photo-1614064641938-3bbee52942c7?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-        },
-        {
-          title: "Elliptic Curve Cryptography: Smaller Keys, Same Security",
-          description: "How ECC provides the same level of security as traditional methods like RSA but with significantly smaller key sizes.",
-          url: "https://blog.cloudflare.com/a-relatively-easy-to-understand-primer-on-elliptic-curve-cryptography/",
-          category: "algorithms",
-          source: "IEEE Spectrum",
-          type: "academic",
-          imageUrl: "https://images.unsplash.com/photo-1509228627152-72ae9ae6848d?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-        },
-        {
-          title: "TLS 1.3: Improvements in Security and Performance",
-          description: "Overview of the security and performance improvements in TLS 1.3 compared to previous versions of the protocol.",
-          url: "https://www.ietf.org/rfc/rfc8446.txt",
-          category: "security",
-          source: "IETF",
-          type: "news",
-          imageUrl: "https://images.unsplash.com/photo-1480944657103-7fed22359e1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-        },
-        {
-          title: "Homomorphic Encryption: Computing on Encrypted Data",
-          description: "Exploring how homomorphic encryption allows computations to be performed on encrypted data without decrypting it first.",
-          url: "https://www.microsoft.com/en-us/research/project/homomorphic-encryption/",
-          category: "encryption",
-          source: "Microsoft Research",
-          type: "academic",
-          imageUrl: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-        }
-      ];
-      
-      const result = [];
-      
-      for (let i = 0; i < count; i++) {
-        const index = (startIndex + i) % articleData.length;
-        const article = articleData[index];
-        
-        // Calculate a date within the last 3 years
-        const date = new Date();
-        date.setDate(date.getDate() - (i * 14)); // Each article is about two weeks apart
-        
-        result.push({
-          id: `article-${startIndex + i}`,
-          title: article.title,
-          description: article.description,
-          url: article.url,
-          imageUrl: article.imageUrl, // Use the direct image URL instead of dynamic Unsplash
-          source: article.source,
-          publishedAt: date.toISOString().split('T')[0],
-          category: article.category,
-          type: article.type
-        });
-      }
-      
-      return result;
-    };
-    
+  const fetchArticles = useCallback(async (pageNum) => {
     try {
-      // For now, simulate API pagination with mock data
-      const pageSize = 9; // Show 9 articles per page (3x3 grid)
-      const startIndex = (pageNum - 1) * pageSize;
-      const mockArticles = generateMockArticles(100, 0); // Generate 100 mock articles
+      setLoading(true);
+      console.log('Fetching articles for page:', pageNum);
+      const response = await fetch(
+        `http://localhost:5001/api/articles/news?page=${pageNum}&pageSize=10&search=${searchTerm}&category=${category}`
+      );
       
-      // Apply filters
-      let filteredArticles = mockArticles;
-      
-      // Filter by category if needed
-      if (cat !== 'all') {
-        filteredArticles = filteredArticles.filter(article => article.category === cat);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      // Filter by search term if provided
-      if (search) {
-        const searchLower = search.toLowerCase();
-        filteredArticles = filteredArticles.filter(article => 
-          article.title.toLowerCase().includes(searchLower) || 
-          article.description.toLowerCase().includes(searchLower)
-        );
-      }
+      const data = await response.json();
+      console.log('Received data:', data);
       
-      // Get the current page of articles
-      const paginatedArticles = filteredArticles.slice(startIndex, startIndex + pageSize);
-      
-      // Update state
-      setArticles(prevArticles => {
-        if (pageNum === 1) {
-          return paginatedArticles;
-        } else {
-          return [...prevArticles, ...paginatedArticles];
-        }
-      });
-      
-      // Check if there are more articles to load
-      setHasMore(startIndex + pageSize < filteredArticles.length);
-      setPage(pageNum);
-      
-      // Ensure the loader is shown for at least 750ms
-      const elapsedTime = Date.now() - startTime;
-      if (elapsedTime < 750) {
-        await new Promise(resolve => setTimeout(resolve, 750 - elapsedTime));
+      if (data.success && data.articles) {
+        setArticles(prevArticles => {
+          if (pageNum === 1) {
+            return data.articles.items || [];
+          }
+          return [...new Set([...prevArticles, ...(data.articles.items || [])])];
+        });
+        
+        setHasMore(data.articles.hasMore);
+        setPage(pageNum);
+      } else {
+        console.error('API returned unsuccessful response:', data);
+        setError('Failed to fetch articles: ' + (data.message || 'Unknown error'));
+        setHasMore(false);
       }
     } catch (err) {
       console.error('Error fetching articles:', err);
-      setError('Failed to fetch articles. Please try again later.');
+      setError('Failed to fetch articles: ' + err.message);
+      setHasMore(false);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [category, searchTerm]);
 
-  // Remove or comment out unused functions
-  /*
-  // Function to detect the category of an article based on its content
-  const detectCategory = (text) => {
-    text = text.toLowerCase();
-    
-    if (text.includes('blockchain') || text.includes('bitcoin') || text.includes('ethereum')) {
-      return 'blockchain';
-    } else if (text.includes('cryptanalysis') || text.includes('breaking') || text.includes('attack')) {
-      return 'cryptanalysis';
-    } else if (text.includes('security') || text.includes('protection') || text.includes('defense')) {
-      return 'security';
-    } else if (text.includes('encryption') || text.includes('cipher') || text.includes('encrypt')) {
-      return 'encryption';
-    } else if (text.includes('algorithm') || text.includes('protocol')) {
-      return 'algorithms';
-    } else {
-      return 'cryptography';
-    }
+  const loadMoreArticles = () => {
+    fetchArticles(page + 1, searchTerm, category);
   };
-
-  // Function to check if an article is related to cryptography
-  const isCryptographyRelated = (text) => {
-    text = text.toLowerCase();
-    const cryptoKeywords = [
-      'cryptography', 'encryption', 'decryption', 'cipher', 'hash', 'blockchain',
-      'security', 'privacy', 'key', 'algorithm', 'rsa', 'aes', 'des', 'sha',
-      'digital signature', 'authentication', 'cryptanalysis', 'symmetric', 'asymmetric'
-    ];
-    
-    return cryptoKeywords.some(keyword => text.includes(keyword));
-  };
-  */
 
   // Setup intersection observer for infinite scrolling
   const lastArticleElementRef = useCallback(node => {
@@ -255,7 +90,7 @@ const Articles = () => {
     
     observer.current = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && hasMore) {
-        fetchArticles(page + 1, searchTerm, category);
+        loadMoreArticles();
       }
     });
     
@@ -273,12 +108,18 @@ const Articles = () => {
     fetchArticles(1, searchTerm, category);
   };
 
+  // Update category handler
+  const handleCategoryChange = (newCategory) => {
+    setCategory(newCategory);
+    setPage(1); // Reset to first page when category changes
+  };
+
   return (
     <ArticlesContainer>
       <div className="container">
         <ArticlesHeader>
-          <h1>Cryptography Articles & News</h1>
-          <p>Stay updated with the latest research, news, and developments in cryptography</p>
+          <h1>Cryptography News Articles</h1>
+          <p>Stay updated with the latest news and developments in cryptography</p>
         </ArticlesHeader>
         
         <SearchFilterContainer>
@@ -300,7 +141,7 @@ const Articles = () => {
             </FilterIcon>
             <FilterSelect 
               value={category} 
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => handleCategoryChange(e.target.value)}
             >
               {categories.map(cat => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -311,19 +152,25 @@ const Articles = () => {
         
         {error && <ErrorMessage>{error}</ErrorMessage>}
         
-        <ArticlesGrid>
-          {articles.map((article, index) => {
-            if (articles.length === index + 1) {
-              return (
-                <div ref={lastArticleElementRef} key={article.id}>
+        <Section>
+          <SectionHeader>
+            <h1>News Articles</h1>
+          </SectionHeader>
+          <ScrollableList>
+            {articles.map((article) => (
+              <ArticleItem
+                key={article.id}
+                onMouseEnter={() => setHoveredArticle(article)}
+                onMouseLeave={() => setHoveredArticle(null)}
+              >
+                <ArticleTitle>{article.title}</ArticleTitle>
+                {hoveredArticle?.id === article.id && (
                   <ArticleCard article={article} />
-                </div>
-              );
-            } else {
-              return <ArticleCard key={article.id} article={article} />;
-            }
-          })}
-        </ArticlesGrid>
+                )}
+              </ArticleItem>
+            ))}
+          </ScrollableList>
+        </Section>
         
         {loading && (
           <LoaderContainer>
@@ -342,28 +189,42 @@ const Articles = () => {
 const ArticlesContainer = styled.div`
   padding: 2rem 0;
   margin-top: -65px;
+  background: ${({ theme }) => theme.colors.backgroundLight};
+  min-height: 100vh;
 `;
 
 const ArticlesHeader = styled.div`
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: ${({ theme }) => theme.colors.background};
+  border-radius: 12px;
+  box-shadow: ${({ theme }) => theme.shadows.medium};
   
   h1 {
-    font-size: 2.2rem;
-    margin-bottom: 0.5rem;
-    color: ${({ theme }) => theme.colors.text};
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: ${({ theme }) => theme.colors.primary};
+    font-weight: bold;
   }
   
   p {
     color: ${({ theme }) => theme.colors.textLight};
-    font-size: 1.1rem;
+    font-size: 1.2rem;
+    max-width: 600px;
+    margin: 0 auto;
   }
 `;
 
 const SearchFilterContainer = styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 2rem;
   margin-bottom: 2rem;
+  padding: 1rem;
+  background: ${({ theme }) => theme.colors.background};
+  border-radius: 12px;
+  box-shadow: ${({ theme }) => theme.shadows.medium};
   
   @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
     flex-direction: column;
@@ -375,13 +236,17 @@ const SearchForm = styled.form`
   display: flex;
   flex: 1;
   max-width: 500px;
+  box-shadow: ${({ theme }) => theme.shadows.small};
+  border-radius: 8px;
+  overflow: hidden;
 `;
 
 const SearchInput = styled.input`
   flex: 1;
-  padding: 0.8rem 1rem;
+  padding: 1rem 1.5rem;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 4px 0 0 4px;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
   font-size: 1rem;
   
   &:focus {
@@ -394,9 +259,9 @@ const SearchButton = styled.button`
   background-color: ${({ theme }) => theme.colors.primary};
   color: white;
   border: none;
-  border-radius: 0 4px 4px 0;
-  padding: 0 1rem;
+  padding: 0 1.5rem;
   cursor: pointer;
+  transition: background-color 0.3s ease;
   
   &:hover {
     background-color: ${({ theme }) => theme.colors.primaryDark};
@@ -429,12 +294,6 @@ const FilterSelect = styled.select`
   }
 `;
 
-const ArticlesGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
-`;
-
 const LoaderContainer = styled.div`
   display: flex;
   justify-content: center;
@@ -459,6 +318,94 @@ const NoResults = styled.div`
   padding: 3rem 0;
   color: ${({ theme }) => theme.colors.textLight};
   font-size: 1.1rem;
+`;
+
+const Section = styled.div`
+  // background: ${({ theme }) => theme.colors.background};
+  background: #e7e2e2;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: black 0px 0px 10px 0px;
+`;
+
+const SectionHeader = styled.div`
+  text-align: center;
+  margin-bottom: 2rem;
+
+
+  h1 {
+    font-size: 1.8rem;
+    color: black;
+    position: relative;
+    display: inline-block;
+    
+    &:after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: blaCK;
+      border-radius: 2px;
+    }
+  }
+`;
+
+const SectionsWrapper = styled.div`
+  margin-top: 2rem;
+`;
+
+const ScrollableList = styled.div`
+  height: 600px;
+  overflow-y: auto;
+  padding: 1rem;
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.backgroundLight};
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: ${({ theme }) => theme.colors.background};
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: gray;
+    border-radius: 4px;
+  }
+`;
+
+const ArticleItem = styled.div`
+  position: relative;
+  padding: 0.5rem;
+  margin-bottom: 0.75rem;
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    transform: translateX(5px);
+  }
+`;
+
+const ArticleTitle = styled.h3`
+  margin: 0;
+  font-size: 1.1rem;
+  color: ${({ theme }) => theme.colors.text};
+  padding: 1rem 1.5rem;
+  // background-color: ${({ theme }) => theme.colors.background};
+  background-color: #d2d4d6;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  box-shadow: ${({ theme }) => theme.shadows.small};
+  transition: all 0.3s ease;
+
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.primaryLight};
+    color: ${({ theme }) => theme.colors.primary};
+    box-shadow: ${({ theme }) => theme.shadows.medium};
+  }
 `;
 
 export default Articles;

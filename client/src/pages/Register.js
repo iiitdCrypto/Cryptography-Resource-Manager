@@ -78,7 +78,7 @@ const Register = () => {
       setRegisterError('');
       
       try {
-        const response = await register({
+        await register({
           name: formData.name,
           surname: formData.surname,
           email: formData.email,

@@ -23,13 +23,13 @@ import ResourceDetail from './pages/ResourceDetail';
 import Articles from './pages/Articles';
 import Dashboard from './pages/Dashboard';
 import UserManagement from './components/dashboard/UserManagement';
-import Analytics from './components/dashboard/Analytics';
+import Lectures from './components/dashboard/Lectures';
 import ContentManagement from './components/dashboard/ContentManagement';
 import DashboardEvents from './components/dashboard/DashboardEvents';
 import DashboardHome from './components/dashboard/DashboardHome';
 import Professors from './components/dashboard/crypto-iiitd';
 import Events from './pages/Events';
-import Lectures from './pages/Lectures';
+import LecturesPage from './pages/Lectures';
 import CryptoIIITD from './pages/CryptoIIITD';
 // import CryptoIIITD from './components/dashboard/CryptoIIITD';
 
@@ -44,7 +44,7 @@ function App() {
             <Route path="/dashboard" element={<DashboardLayout />}>
               <Route index element={<DashboardHome />} />
               <Route path="users" element={<UserManagement />} />
-              <Route path="analytics" element={<Analytics />} />
+              <Route path="lectures" element={<Lectures />} />
               <Route path="content" element={<ContentManagement />} />
               <Route path="resources" element={<Dashboard />} />
               <Route path="events" element={<DashboardEvents />} />
@@ -129,7 +129,7 @@ function App() {
             <Route path="/lectures" element={<>
               <Navbar />
               <main>
-                <Lectures />
+                <LecturesPage />
               </main>
               <Footer />
             </>} />

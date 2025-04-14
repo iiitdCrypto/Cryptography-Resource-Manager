@@ -3,7 +3,8 @@ const router = express.Router();
 const dashboardController = require('../controllers/dashboardController');
 const auth = require('../middleware/auth');
 const { canAccessDashboard, isAdmin } = require('../middleware/permissions');
-const { trackVisitor } = require('../middleware/analytics');
+const lectureController = require('../middleware/lectures');
+const { trackVisitor } = require('../middleware/tracking');
 
 // All routes are protected with auth middleware
 router.use(auth);
@@ -32,5 +33,12 @@ router.get('/content', canAccessDashboard, dashboardController.getContentStats);
 // @desc    Record a page view
 // @access  Public
 router.post('/pageview', dashboardController.recordPageView);
+
+// Lecture routes
+router.get('/lectures', lectureController.getLectures);
+router.post('/lectures', lectureController.createLecture);
+router.get('/lectures/:id', lectureController.getLectureById);
+router.put('/lectures/:id', lectureController.updateLecture);
+router.delete('/lectures/:id', lectureController.deleteLecture);
 
 module.exports = router;

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { FaEnvelope, FaLock, FaExclamationCircle } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
+import OtpVerification from '../components/auth/OtpVerification';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ const Login = () => {
   const [formErrors, setFormErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [showOtpVerification, setShowOtpVerification] = useState(false);
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -58,22 +60,58 @@ const Login = () => {
       setLoginError('');
       
       try {
-        await login(formData.email, formData.password);
-        navigate('/');
+        const result = await login(formData.email, formData.password);
+        
+        // Check if email verification is needed
+        if (result?.needsVerification) {
+          setShowOtpVerification(true);
+        } else {
+          navigate('/dashboard');
+        }
       } catch (error) {
-        setLoginError(error.response?.data?.message || 'Login failed. Please try again.');
+        setLoginError(error.response?.data?.error || error.message || 'Login failed. Please try again.');
       } finally {
         setIsSubmitting(false);
       }
     }
   };
   
+  const handleVerificationSuccess = (data) => {
+    // When OTP verification is successful
+    if (data?.token) {
+      localStorage.setItem('token', data.token);
+      navigate('/dashboard');
+    }
+  };
+  
+  if (showOtpVerification) {
+    return (
+      <LoginContainer>
+        <div className="container">
+          <LoginCard>
+            <LoginHeader>
+              <LoginTitle>Verify Your Email</LoginTitle>
+              <LoginSubtitle>Confirmation Required</LoginSubtitle>
+            </LoginHeader>
+            <div>
+              <FormSubtitle>We've sent a verification code to your email</FormSubtitle>
+              <OtpVerification 
+                email={formData.email} 
+                onSuccess={handleVerificationSuccess} 
+              />
+            </div>
+          </LoginCard>
+        </div>
+      </LoginContainer>
+    );
+  }
+  
   return (
     <LoginContainer>
       <div className="container">
         <LoginCard>
           <LoginHeader>
-            <LoginTitle>Welcome Back</LoginTitle>
+            <LoginTitle>Welcome to Cryptography Resources Manager</LoginTitle>
             <LoginSubtitle>Sign in to your account</LoginSubtitle>
           </LoginHeader>
           
@@ -150,44 +188,61 @@ const LoginContainer = styled.div`
   justify-content: center;
   min-height: calc(100vh - 160px);
   padding: 2rem 0;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
 `;
 
 const LoginCard = styled.div`
   background-color: white;
-  border-radius: 10px;
-  box-shadow: ${({ theme }) => theme.shadows.medium};
-  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  padding: 2.5rem;
   width: 100%;
   max-width: 500px;
   margin: 0 auto;
+  transition: transform 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-5px);
+  }
 `;
 
 const LoginHeader = styled.div`
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 `;
 
 const LoginTitle = styled.h1`
-  font-size: 2rem;
-  color: ${({ theme }) => theme.colors.text};
-  margin-bottom: 0.5rem;
+  font-size: 1.8rem;
+  color: #2A3F62;
+  margin-bottom: 0.8rem;
+  font-weight: 700;
 `;
 
 const LoginSubtitle = styled.p`
-  color: ${({ theme }) => theme.colors.textLight};
+  color: #7C8DB5;
+  font-size: 1.1rem;
+`;
+
+const FormSubtitle = styled.p`
+  color: #7C8DB5;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  font-weight: 500;
 `;
 
 const ErrorMessage = styled.div`
   display: flex;
   align-items: center;
-  background-color: ${({ theme }) => `${theme.colors.error}20`};
-  color: ${({ theme }) => theme.colors.error};
+  background-color: rgba(237, 76, 92, 0.15);
+  color: #ED4C5C;
   padding: 1rem;
-  border-radius: 5px;
+  border-radius: 8px;
   margin-bottom: 1.5rem;
   
   svg {
-    margin-right: 0.5rem;
+    margin-right: 0.8rem;
+    font-size: 1.2rem;
   }
 `;
 
@@ -196,14 +251,15 @@ const LoginForm = styled.form`
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.8rem;
 `;
 
 const FormLabel = styled.label`
   display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: ${({ theme }) => theme.colors.text};
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+  color: #2A3F62;
+  font-size: 0.95rem;
 `;
 
 const InputWrapper = styled.div`
@@ -213,37 +269,46 @@ const InputWrapper = styled.div`
 const InputIcon = styled.div`
   position: absolute;
   top: 50%;
-  left: 1rem;
+  left: 1.2rem;
   transform: translateY(-50%);
-  color: ${({ theme }) => theme.colors.textLight};
+  color: #7C8DB5;
 `;
 
 const FormInput = styled.input`
   width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 1px solid ${({ error, theme }) => error ? theme.colors.error : theme.colors.gray};
-  border-radius: 5px;
+  padding: 0.9rem 1rem 0.9rem 3rem;
+  border: 2px solid ${({ error }) => error ? '#ED4C5C' : '#E4E9F2'};
+  border-radius: 8px;
   font-size: 1rem;
   outline: none;
-  transition: border-color 0.3s ease;
+  transition: all 0.3s ease;
+  background-color: #F8FAFC;
   
   &:focus {
-    border-color: ${({ error, theme }) => error ? theme.colors.error : theme.colors.primary};
+    border-color: ${({ error }) => error ? '#ED4C5C' : '#3772FF'};
+    box-shadow: 0 0 0 3px ${({ error }) => error ? 'rgba(237, 76, 92, 0.2)' : 'rgba(55, 114, 255, 0.2)'};
+    background-color: #FFFFFF;
+  }
+  
+  &::placeholder {
+    color: #A0AABA;
   }
 `;
 
 const ErrorText = styled.p`
-  color: ${({ theme }) => theme.colors.error};
-  font-size: 0.875rem;
+  color: #ED4C5C;
+  font-size: 0.85rem;
   margin-top: 0.5rem;
+  font-weight: 500;
 `;
 
 const ForgotPassword = styled(Link)`
   display: block;
   text-align: right;
-  color: ${({ theme }) => theme.colors.primary};
-  margin-bottom: 1.5rem;
-  font-size: 0.875rem;
+  color: #3772FF;
+  margin-bottom: 1.8rem;
+  font-size: 0.9rem;
+  font-weight: 500;
   
   &:hover {
     text-decoration: underline;
@@ -252,35 +317,44 @@ const ForgotPassword = styled(Link)`
 
 const SubmitButton = styled.button`
   width: 100%;
-  padding: 0.75rem;
-  background-color: ${({ theme }) => theme.colors.primary};
+  padding: 0.9rem;
+  background: linear-gradient(90deg, #3772FF 0%, #3D80FF 100%);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(55, 114, 255, 0.3);
   
   &:hover {
-    background-color: ${({ theme }) => theme.colors.primaryDark};
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(55, 114, 255, 0.4);
+  }
+  
+  &:active {
+    transform: translateY(0);
   }
   
   &:disabled {
-    background-color: ${({ theme }) => theme.colors.gray};
+    background: #A0AABA;
     cursor: not-allowed;
+    box-shadow: none;
   }
 `;
 
 const LoginFooter = styled.div`
   text-align: center;
-  color: ${({ theme }) => theme.colors.textLight};
+  color: #7C8DB5;
+  font-size: 0.95rem;
+  margin-top: 2rem;
 `;
 
 const RegisterLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
+  color: #3772FF;
   margin-left: 0.5rem;
-  font-weight: 500;
+  font-weight: 600;
   
   &:hover {
     text-decoration: underline;

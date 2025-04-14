@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getExternalEvents } = require('../services/eventService');
-const { pool } = require('../db');
+const { pool } = require('../config/db');
 
 /**
  * @route GET /api/events

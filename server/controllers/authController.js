@@ -10,11 +10,11 @@ const { generateOTP, storeOTP, verifyOTP, cleanupExpiredOTPs } = require('../uti
 // @route   POST /api/auth/register
 // @access  Public
 const register = asyncHandler(async (req, res) => {
-  const { name, surname, email, password, institution, position } = req.body;
+  const { first_name, last_name, email, password } = req.body;
 
-  if (!name || !email || !password) {
+  if (!first_name || !email || !password) {
     res.status(400);
-    throw new Error('Name, email, and password are required');
+    throw new Error('First name, email, and password are required');
   }
 
   // Check if email already exists
@@ -36,17 +36,15 @@ const register = asyncHandler(async (req, res) => {
     // Insert user with email_verified = false
     const result = await executeQuery(
       `INSERT INTO users (
-        name, surname, email, password, role, institution, position, 
+        first_name, last_name, email, password, role, 
         email_verified, account_status, last_password_change, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
       [
-        name,
-        surname || null,
+        first_name,
+        last_name || null,
         email,
         hashedPassword,
-        'user',
-        institution || null,
-        position || null,
+        'regular',
         false, // Not verified yet
         'inactive' // Inactive until email is verified
       ]
@@ -84,7 +82,7 @@ const register = asyncHandler(async (req, res) => {
     await storeOTP(email, otp);
     
     // Send verification email with OTP
-    await sendOTPEmail(email, otp, name);
+    await sendOTPEmail(email, otp, first_name);
 
     // Create audit log entry
     await executeQuery(
@@ -106,7 +104,7 @@ const register = asyncHandler(async (req, res) => {
     // Return user data (without token since not yet verified)
     res.status(201).json({
       id: userId,
-      name,
+      first_name,
       email,
       message: 'Registration successful. Please check your email for verification code.',
       // Include OTP in development mode only
@@ -262,7 +260,7 @@ const resendVerificationOTP = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Login user
+// @desc    Login user and get token
 // @route   POST /api/auth/login
 // @access  Public
 const login = asyncHandler(async (req, res) => {

@@ -1,63 +1,154 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'cryptography_resource_manager',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  connectTimeout: 60000,
-  multipleStatements: true // Enable multiple statements for triggers
-});
+let pool = null;
 
-// Test connection
-pool.getConnection()
-  .then(connection => {
-    console.log('Database connection pool initialized successfully');
-    connection.release();
-  })
-  .catch(err => {
-    console.error('Error initializing database pool:', err);
-  });
-
-// Test the connection and create database if it doesn't exist
-const connectDB = async () => {
+const initializeDatabase = async () => {
   try {
+    // First try to create database if it doesn't exist
+    const tempPool = mysql.createPool({
+      host: 'localhost',
+      user: 'root',
+      password: '12345',
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0
+    });
+
+    await tempPool.query('CREATE DATABASE IF NOT EXISTS cryptography_rm');
+    await tempPool.end();
+
+    // Now create the main pool with the database selected
+    pool = mysql.createPool({
+      host: 'localhost',
+      user: 'root',
+      password: '12345',
+      database: 'cryptography_rm',
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      multipleStatements: true
+    });
+
+    // Test connection
     const connection = await pool.getConnection();
-    console.log('MySQL database connected successfully');
+    console.log('Database connection established successfully');
+    
+    // Initialize tables
+    await initializeTables(connection);
+    
     connection.release();
     return pool;
   } catch (error) {
-    console.error('MySQL connection error:', error.message);
-    
-    // Create database if it doesn't exist
-    if (error.code === 'ER_BAD_DB_ERROR') {
-      try {
-        const tempPool = mysql.createPool({
-          host: process.env.DB_HOST || 'localhost',
-          user: process.env.DB_USER || 'root',
-          password: process.env.DB_PASSWORD || ''
-        });
-        
-        await tempPool.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME || 'cryptography_resource_manager'}`);
-        console.log('Database created successfully');
-        
-        // Try connecting again
-        return await connectDB();
-      } catch (createError) {
-        console.error('Failed to create database:', createError.message);
-        process.exit(1);
-      }
-    } else {
-      process.exit(1);
-    }
+    console.error('Database initialization error:', error);
+    process.exit(1);
   }
 };
+
+const initializeTables = async (connection) => {
+  try {
+    // Get all tables in the database
+    const [tables] = await connection.query(
+      "SELECT table_name FROM information_schema.tables WHERE table_schema = 'cryptography_rm'"
+    );
+    
+    // First, disable foreign key checks to avoid constraint issues
+    await connection.query('SET FOREIGN_KEY_CHECKS = 0;');
+    
+    try {
+      // Drop tables that might reference users first
+      // Known child tables
+      const childTables = [
+        'event_registrations',
+        'events',
+        'audit_logs',
+        'articles',
+        'resources',
+        'user_settings',
+        'user_permissions',
+        'visitor_logs'
+      ];
+      
+      // Drop all known child tables first
+      for (const tableName of childTables) {
+        await connection.query(`DROP TABLE IF EXISTS ${tableName};`);
+      }
+      
+      // Drop any remaining tables that might exist
+      for (const table of tables) {
+        if (!childTables.includes(table.table_name) && table.table_name !== 'users') {
+          await connection.query(`DROP TABLE IF EXISTS ${table.table_name};`);
+        }
+      }
+      
+      // Finally drop the users table
+      await connection.query('DROP TABLE IF EXISTS users;');
+    } finally {
+      // Re-enable foreign key checks
+      await connection.query('SET FOREIGN_KEY_CHECKS = 1;');
+    }
+
+    // Create tables in correct order (parent tables first)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        role ENUM('user', 'admin') DEFAULT 'user',
+        email_verified BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS user_permissions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        permission VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      );
+
+      CREATE TABLE IF NOT EXISTS user_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        setting_key VARCHAR(50) NOT NULL,
+        setting_value TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      );
+
+      CREATE TABLE IF NOT EXISTS articles (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        description TEXT,
+        category VARCHAR(50),
+        source VARCHAR(255),
+        url VARCHAR(512),
+        author_id INT,
+        image_url VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL
+      );
+    `);
+
+    // Insert sample data
+    await connection.query(`
+      INSERT INTO articles (title, content, description, category, source) 
+      VALUES 
+      ('Introduction to Cryptography', 'Sample content...', 'Basic introduction', 'cryptography', 'Internal'),
+      ('Latest in Encryption', 'Sample content...', 'New developments', 'security', 'Internal');
+    `);
+
+    console.log('Tables initialized successfully with sample data');
+  } catch (error) {
+    console.error('Error initializing tables:', error);
+    throw error;
+  }
+};
+
+// Initialize database connection
+initializeDatabase().catch(console.error);
 
 // Check if a table exists
 const checkTable = async (tableName) => {
@@ -161,8 +252,8 @@ const executeTransactionQuery = async (connection, sql, params = []) => {
 };
 
 module.exports = {
-  pool,
-  connectDB,
+  connectDB: initializeDatabase, // Add this line
+  getPool: () => pool,
   executeQuery,
   beginTransaction,
   commitTransaction,

@@ -37,6 +37,10 @@ const DashboardContent = () => {
             <h3>crypto-iiitd</h3>
             <p>Manage professor profiles and their associated courses. Add new professors, update their information, or remove them from the system.</p>
           </ManualSection>
+          <ManualSection>
+            <h3>lectures</h3>
+            <p>Manage lectures associated to the courses at IIITD.</p>
+          </ManualSection>
         </UserManual>
       </WelcomeSection>
     );
@@ -74,9 +78,9 @@ const DashboardSidebar = ({ isOpen }) => {
       path: '/dashboard/crypto-iiitd'
     },
     {
-      title: 'Analytics',
+      title: 'Lectures',
       icon: <FaChartBar size={20} />,
-      path: '/dashboard/analytics'
+      path: '/dashboard/lectures'
     }
     // {
     //   title: 'Settings',

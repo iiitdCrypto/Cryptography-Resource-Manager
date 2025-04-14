@@ -84,6 +84,14 @@ app.use('/api/users', require('./routes/users'));
 console.log('Registering /api/articles route');
 app.use('/api/articles', require('./routes/articles'));
 
+// Register Hacker News articles route
+console.log('Registering /api/news route');
+app.use('/api/news', require('./routes/hackerNewsArticles'));
+
+// Register IACR News route
+console.log('Registering /api/iacr-news route');
+app.use('/', require('./routes/iacrNews'));
+
 app.use('/api/resources', require('./routes/resources'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/events', require('./routes/events'));
@@ -117,4 +125,11 @@ const startServer = (port) => {
 };
 
 // Start the server
-startServer(PORT);
+connectDB()
+  .then(() => {
+    startServer(PORT);
+  })
+  .catch((error) => {
+    console.error('Failed to initialize database:', error);
+    process.exit(1);
+  });

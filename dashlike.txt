@@ -258,7 +258,7 @@ const AnalyticsDashboard = () => {
   });
 
   useEffect(() => {
-    const ws = new WebSocket(`${process.env.REACT_APP_WS_URL}/analytics`);
+    const ws = new WebSocket(`${process.env.REACT_APP_WS_URL}/lectures`);
     
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);

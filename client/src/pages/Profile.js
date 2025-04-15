@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FaUser, FaEnvelope, FaExclamationCircle, FaCheckCircle, FaSignOutAlt } from 'react-icons/fa';
+import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import authService from '../services/authService';
 import { useNavigate } from 'react-router-dom';
+
+const API_URL = `${process.env.REACT_APP_BASE_URL}/api`;
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -165,7 +168,7 @@ const Profile = () => {
         const token = localStorage.getItem('token');
         
         await axios.put(
-          'http://localhost:5001/api/users/password',
+          `${API_URL}/users/password`,
           {
             currentPassword: passwordData.currentPassword,
             newPassword: passwordData.newPassword

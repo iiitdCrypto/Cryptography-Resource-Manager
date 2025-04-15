@@ -1,6 +1,9 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import axios from 'axios';
 import authService from '../services/authService';
+
+const API_URL = `${process.env.REACT_APP_BASE_URL}/api`;
 
 const AuthContext = createContext();
 

@@ -1,20 +1,47 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-// Create a connection pool
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  multipleStatements: true
-});
+let pool = null;
 
-// Function to execute SQL queries
-async function executeQuery(sql, params = []) {
+const initializeDatabase = async () => {
+  try {
+    // First try to create database if it doesn't exist
+    const tempPool = mysql.createPool({
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0
+    });
+    await tempPool.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME}`);
+    await tempPool.end();
+
+    // Create the main connection pool
+    pool = mysql.createPool({
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      multipleStatements: true
+    });
+
+    // Test connection
+    const connection = await pool.getConnection();
+    console.log('Database connection established successfully');
+    connection.release();
+    return pool;
+  } catch (error) {
+    console.error('Database initialization error:', error);
+    process.exit(1);
+  }
+};
+
+// Execute a database query
+const executeQuery = async (sql, params = []) => {
   try {
     // Handle transactions separately
     if (sql.trim().toUpperCase() === 'START TRANSACTION' || 
@@ -38,27 +65,39 @@ async function executeQuery(sql, params = []) {
     console.error('Query execution error:', error.message);
     throw error;
   }
-}
+};
 
-// Function to connect to the database
-async function connectDB() {
-  try {
-    const connection = await pool.getConnection();
-    console.log('Database connected successfully');
-    connection.release();
-    return true;
-  } catch (error) {
-    console.error('Database connection error:', error);
-    process.exit(1);
-  }
-}
+// Begin a transaction and get a connection
+const beginTransaction = async () => {
+  const connection = await pool.getConnection();
+  await connection.beginTransaction();
+  return connection;
+};
+
+// Commit a transaction
+const commitTransaction = async (connection) => {
+  await connection.commit();
+  connection.release();
+};
+
+// Rollback a transaction
+const rollbackTransaction = async (connection) => {
+  await connection.rollback();
+  connection.release();
+};
+
+// Execute a query within a transaction
+const executeTransactionQuery = async (connection, sql, params = []) => {
+  const [result] = await connection.execute(sql, params);
+  return result;
+};
 
 // Check if a table exists
 const checkTable = async (tableName) => {
   try {
     const [rows] = await pool.query(
       'SELECT 1 FROM information_schema.tables WHERE table_schema = ? AND table_name = ?',
-      [process.env.DB_NAME || 'cryptography_resource_manager', tableName]
+      [process.env.DB_NAME, tableName]
     );
     return rows.length > 0;
   } catch (error) {
@@ -81,28 +120,6 @@ const checkColumn = async (tableName, columnName) => {
   }
 };
 
-// Transaction related functions
-const beginTransaction = async () => {
-  const connection = await pool.getConnection();
-  await connection.beginTransaction();
-  return connection;
-};
-
-const commitTransaction = async (connection) => {
-  await connection.commit();
-  connection.release();
-};
-
-const rollbackTransaction = async (connection) => {
-  await connection.rollback();
-  connection.release();
-};
-
-const executeTransactionQuery = async (connection, sql, params = []) => {
-  const [result] = await connection.execute(sql, params);
-  return result;
-};
-
 // Function to ensure email_verified column exists in users table
 const ensureEmailVerifiedExists = async () => {
   const hasColumn = await checkColumn('users', 'email_verified');
@@ -113,9 +130,8 @@ const ensureEmailVerifiedExists = async () => {
   return true;
 };
 
-// Export all database functions
 module.exports = {
-  connectDB,
+  connectDB: initializeDatabase,
   getPool: () => pool,
   executeQuery,
   beginTransaction,

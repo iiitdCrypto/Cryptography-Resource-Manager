@@ -51,7 +51,7 @@ const Navbar = () => {
   }, [location.pathname]);
 
   return (
-    <NavbarContainer isScrolled={isScrolled}>
+    <NavbarContainer $isScrolled={isScrolled}>
       <div className="container">
         <NavbarContent>
           <Logo to="/">
@@ -63,18 +63,18 @@ const Navbar = () => {
             {isOpen ? <FaTimes /> : <FaBars />}
           </MenuIcon>
 
-          <NavMenu isOpen={isOpen}>
+          <NavMenu $isOpen={isOpen}>
             <NavItem>
-              <NavLink to="/" active={location.pathname === '/'}>Home</NavLink>
+              <NavLink to="/" $active={location.pathname === '/'}>Home</NavLink>
             </NavItem>
             <NavItem>
               <DropdownToggle 
                 onClick={toggleResourcesDropdown}
-                active={location.pathname.startsWith('/resources')}
+                $active={location.pathname.startsWith('/resources')}
               >
                 Resources <FaChevronDown />
               </DropdownToggle>
-              <Dropdown isOpen={resourcesDropdown}>
+              <Dropdown $isOpen={resourcesDropdown}>
                 <DropdownItem>
                   <NavLink to="/resources?type=video">Videos</NavLink>
                 </DropdownItem>
@@ -90,19 +90,19 @@ const Navbar = () => {
               </Dropdown>
             </NavItem>
             <NavItem>
-              <NavLink to="/articles" active={location.pathname.startsWith('/articles')}>Articles</NavLink>
+              <NavLink to="/articles" $active={location.pathname.startsWith('/articles')}>Articles</NavLink>
             </NavItem>
             <NavItem>
-              <NavLink to="/events" active={location.pathname.startsWith('/events')}>Events</NavLink>
+              <NavLink to="/events" $active={location.pathname.startsWith('/events')}>Events</NavLink>
             </NavItem>
             <NavItem>
               <DropdownToggle 
                 onClick={toggleProjectsDropdown}
-                active={location.pathname.startsWith('/projects')}
+                $active={location.pathname.startsWith('/projects')}
               >
                 Projects <FaChevronDown />
               </DropdownToggle>
-              <Dropdown isOpen={projectsDropdown}>
+              <Dropdown $isOpen={projectsDropdown}>
                 <DropdownItem>
                   <NavLink to="/projects?type=IP">IP</NavLink>
                 </DropdownItem>
@@ -121,10 +121,10 @@ const Navbar = () => {
               </Dropdown>
             </NavItem>
             <NavItem>
-              <NavLink to="/lectures" active={location.pathname.startsWith('/lectures')}>Lectures</NavLink>
+              <NavLink to="/lectures" $active={location.pathname.startsWith('/lectures')}>Lectures</NavLink>
             </NavItem>
             <NavItem>
-              <NavLink to="/about" active={location.pathname.startsWith('/about')}>About</NavLink>
+              <NavLink to="/about" $active={location.pathname.startsWith('/about')}>About</NavLink>
             </NavItem>
           </NavMenu>
 
@@ -133,15 +133,18 @@ const Navbar = () => {
               <ProfileContainer>
                 <ProfileToggle onClick={toggleProfileDropdown}>
                   <FaUser />
-                  <span>{user.name}</span>
+                  <span>{user.firstName || user.email.split('@')[0]}</span>
                   <FaChevronDown />
                 </ProfileToggle>
-                <ProfileDropdown isOpen={profileDropdown}>
-                  {user.role === 'admin' && (
+                <ProfileDropdown $isOpen={profileDropdown}>
+                  {(user.role === 'admin' || user.role === 'authorized') && (
                     <ProfileItem>
-                      <NavLink to="/admin">Dashboard</NavLink>
+                      <NavLink to="/dashboard">Dashboard</NavLink>
                     </ProfileItem>
                   )}
+                  <ProfileItem>
+                    <NavLink to="/profile">My Profile</NavLink>
+                  </ProfileItem>
                   <ProfileItem onClick={logout}>
                     <FaSignOutAlt /> Logout
                   </ProfileItem>
@@ -168,10 +171,10 @@ const NavbarContainer = styled.nav`
   height: 80px;
   z-index: 1000;
   transition: all 0.3s ease;
-  background-color: ${({ isScrolled, theme }) => 
-    isScrolled ? theme.colors.white : 'transparent'};
-  box-shadow: ${({ isScrolled, theme }) => 
-    isScrolled ? theme.shadows.small : 'none'};
+  background-color: ${({ $isScrolled, theme }) => 
+    $isScrolled ? theme.colors.white : 'transparent'};
+  box-shadow: ${({ $isScrolled, theme }) => 
+    $isScrolled ? theme.shadows.small : 'none'};
 `;
 
 const NavbarContent = styled.div`
@@ -217,9 +220,9 @@ const NavMenu = styled.ul`
     background-color: ${({ theme }) => theme.colors.white};
     box-shadow: ${({ theme }) => theme.shadows.medium};
     padding: 1rem 0;
-    transform: ${({ isOpen }) => isOpen ? 'translateY(0)' : 'translateY(-100%)'};
-    opacity: ${({ isOpen }) => isOpen ? 1 : 0};
-    visibility: ${({ isOpen }) => isOpen ? 'visible' : 'hidden'};
+    transform: ${({ $isOpen }) => $isOpen ? 'translateY(0)' : 'translateY(-100%)'};
+    opacity: ${({ $isOpen }) => $isOpen ? 1 : 0};
+    visibility: ${({ $isOpen }) => $isOpen ? 'visible' : 'hidden'};
     transition: all 0.3s ease;
     z-index: 999;
   }
@@ -239,8 +242,8 @@ const NavItem = styled.li`
 const NavLink = styled(Link)`
   display: block;
   padding: 0.5rem;
-  color: ${({ active, theme }) => active ? theme.colors.primary : theme.colors.text};
-  font-weight: ${({ active }) => active ? '600' : '400'};
+  color: ${({ $active, theme }) => $active ? theme.colors.primary : theme.colors.text};
+  font-weight: ${({ $active }) => $active ? '600' : '400'};
   transition: color 0.3s ease;
   
   &:hover {
@@ -253,8 +256,8 @@ const DropdownToggle = styled.div`
   align-items: center;
   padding: 0.5rem;
   cursor: pointer;
-  color: ${({ active, theme }) => active ? theme.colors.primary : theme.colors.text};
-  font-weight: ${({ active }) => active ? '600' : '400'};
+  color: ${({ $active, theme }) => $active ? theme.colors.primary : theme.colors.text};
+  font-weight: ${({ $active }) => $active ? '600' : '400'};
   transition: color 0.3s ease;
   
   svg {
@@ -276,9 +279,9 @@ const Dropdown = styled.ul`
   box-shadow: ${({ theme }) => theme.shadows.medium};
   border-radius: 5px;
   padding: 0.5rem 0;
-  transform: ${({ isOpen }) => isOpen ? 'translateY(0)' : 'translateY(-10px)'};
-  opacity: ${({ isOpen }) => isOpen ? 1 : 0};
-  visibility: ${({ isOpen }) => isOpen ? 'visible' : 'hidden'};
+  transform: ${({ $isOpen }) => $isOpen ? 'translateY(0)' : 'translateY(-10px)'};
+  opacity: ${({ $isOpen }) => $isOpen ? 1 : 0};
+  visibility: ${({ $isOpen }) => $isOpen ? 'visible' : 'hidden'};
   transition: all 0.3s ease;
   z-index: 10;
   
@@ -287,7 +290,7 @@ const Dropdown = styled.ul`
     width: 100%;
     box-shadow: none;
     padding: 0;
-    max-height: ${({ isOpen }) => isOpen ? '1000px' : '0'};
+    max-height: ${({ $isOpen }) => $isOpen ? '1000px' : '0'};
     overflow: hidden;
     transform: none;
   }
@@ -364,9 +367,9 @@ const ProfileDropdown = styled.ul`
   box-shadow: ${({ theme }) => theme.shadows.medium};
   border-radius: 5px;
   padding: 0.5rem 0;
-  transform: ${({ isOpen }) => isOpen ? 'translateY(0)' : 'translateY(-10px)'};
-  opacity: ${({ isOpen }) => isOpen ? 1 : 0};
-  visibility: ${({ isOpen }) => isOpen ? 'visible' : 'hidden'};
+  transform: ${({ $isOpen }) => $isOpen ? 'translateY(0)' : 'translateY(-10px)'};
+  opacity: ${({ $isOpen }) => $isOpen ? 1 : 0};
+  visibility: ${({ $isOpen }) => $isOpen ? 'visible' : 'hidden'};
   transition: all 0.3s ease;
   z-index: 10;
 `;

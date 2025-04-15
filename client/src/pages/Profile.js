@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FaUser, FaEnvelope, FaExclamationCircle, FaCheckCircle, FaSignOutAlt } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import authService from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
@@ -26,17 +26,26 @@ const Profile = () => {
   const [updateError, setUpdateError] = useState('');
   
   useEffect(() => {
-    if (user) {
-      // Split name into first and last name if available
-      const nameParts = user.name ? user.name.split(' ') : ['', ''];
-      
-      setProfileData({
-        name: nameParts[0] || '',
-        surname: nameParts.slice(1).join(' ') || '',
-        email: user.email || ''
-      });
-    }
-  }, [user]);
+    const fetchProfile = async () => {
+      try {
+        if (authService.isAuthenticated()) {
+          const profileData = await authService.getProfile();
+          const nameParts = profileData.firstName ? [profileData.firstName, profileData.lastName] : ['', ''];
+          
+          setProfileData({
+            name: nameParts[0] || '',
+            surname: nameParts[1] || '',
+            email: profileData.email || ''
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+        setUpdateError('Failed to load profile data');
+      }
+    };
+    
+    fetchProfile();
+  }, []);
   
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -129,20 +138,11 @@ const Profile = () => {
       setUpdateError('');
       
       try {
-        const token = localStorage.getItem('token');
-        
-        await axios.put(
-          'http://localhost:5001/api/users/profile',
-          {
-            name: `${profileData.name} ${profileData.surname}`.trim(),
-            email: profileData.email
-          },
-          {
-            headers: {
-              'x-auth-token': token
-            }
-          }
-        );
+        await authService.updateProfile({
+          firstName: profileData.name.trim(),
+          lastName: profileData.surname.trim(),
+          email: profileData.email
+        });
         
         setUpdateSuccess('Profile updated successfully');
       } catch (error) {

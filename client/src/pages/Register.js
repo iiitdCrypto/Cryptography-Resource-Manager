@@ -7,8 +7,8 @@ import OtpVerification from '../components/auth/OtpVerification';
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    surname: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -40,14 +40,14 @@ const Register = () => {
   
   const validateForm = () => {
     const errors = {};
-    const { name, surname, email, password, confirmPassword } = formData;
+    const { firstName, lastName, email, password, confirmPassword } = formData;
     
-    if (!name.trim()) {
-      errors.name = 'First name is required';
+    if (!firstName.trim()) {
+      errors.firstName = 'First name is required';
     }
     
-    if (!surname.trim()) {
-      errors.surname = 'Last name is required';
+    if (!lastName.trim()) {
+      errors.lastName = 'Last name is required';
     }
     
     if (!email) {
@@ -58,8 +58,8 @@ const Register = () => {
     
     if (!password) {
       errors.password = 'Password is required';
-    } else if (password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+    } else if (password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
     }
     
     if (password !== confirmPassword) {
@@ -78,9 +78,9 @@ const Register = () => {
       setRegisterError('');
       
       try {
-        await register({
-          name: formData.name,
-          surname: formData.surname,
+        const result = await register({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
           email: formData.email,
           password: formData.password
         });
@@ -88,7 +88,7 @@ const Register = () => {
         // If registration is successful, show OTP verification
         setShowOtpVerification(true);
       } catch (error) {
-        setRegisterError(error.response?.data?.message || 'Registration failed. Please try again.');
+        setRegisterError(error.response?.data?.error || error.message || 'Registration failed. Please try again.');
       } finally {
         setIsSubmitting(false);
       }
@@ -100,13 +100,10 @@ const Register = () => {
     setRegistrationSuccess(true);
     setShowOtpVerification(false);
     
-    // If token is provided, store it and navigate to dashboard
-    if (data?.token) {
-      localStorage.setItem('token', data.token);
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
-    }
+    // Redirect to login page instead of dashboard
+    setTimeout(() => {
+      navigate('/login');
+    }, 2000);
   };
   
   if (showOtpVerification) {
@@ -116,12 +113,15 @@ const Register = () => {
           <RegisterCard>
             <RegisterHeader>
               <RegisterTitle>Verify Your Email</RegisterTitle>
-              <RegisterSubtitle>We've sent a verification code to your email</RegisterSubtitle>
+              <RegisterSubtitle>Confirmation Required</RegisterSubtitle>
             </RegisterHeader>
-            <OtpVerification 
-              email={formData.email} 
-              onSuccess={handleVerificationSuccess} 
-            />
+            <div>
+              <RegisterSubtitle>We've sent a verification code to your email</RegisterSubtitle>
+              <OtpVerification 
+                email={formData.email} 
+                onSuccess={handleVerificationSuccess} 
+              />
+            </div>
           </RegisterCard>
         </div>
       </RegisterContainer>
@@ -138,16 +138,12 @@ const Register = () => {
             </SuccessIcon>
             <SuccessTitle>Registration Successful!</SuccessTitle>
             <SuccessMessage>
-              A verification email has been sent to <strong>{formData.email}</strong>.
-              Please check your inbox and click the verification link to activate your account.
+              Your account has been verified and created successfully.
             </SuccessMessage>
             <SuccessActions>
               <PrimaryButton onClick={() => navigate('/login')}>
                 Go to Login
               </PrimaryButton>
-              <SecondaryButton as="a" href={`mailto:${formData.email}`}>
-                Open Email App
-              </SecondaryButton>
             </SuccessActions>
           </SuccessCard>
         </div>
@@ -160,8 +156,8 @@ const Register = () => {
       <div className="container">
         <RegisterCard>
           <RegisterHeader>
-            <RegisterTitle>Create Account</RegisterTitle>
-            <RegisterSubtitle>Join our cryptography community</RegisterSubtitle>
+            <RegisterTitle>Join the Cryptography Community</RegisterTitle>
+            <RegisterSubtitle>Create your account to access resources and events</RegisterSubtitle>
           </RegisterHeader>
           
           {registerError && (
@@ -181,15 +177,15 @@ const Register = () => {
                   </InputIcon>
                   <FormInput
                     type="text"
-                    name="name"
-                    placeholder="Enter your first name"
-                    value={formData.name}
+                    name="firstName"
+                    placeholder="First name"
+                    value={formData.firstName}
                     onChange={handleChange}
-                    error={formErrors.name}
+                    error={formErrors.firstName}
                   />
                 </InputWrapper>
-                {formErrors.name && (
-                  <ErrorText>{formErrors.name}</ErrorText>
+                {formErrors.firstName && (
+                  <ErrorText>{formErrors.firstName}</ErrorText>
                 )}
               </FormGroup>
               
@@ -201,21 +197,21 @@ const Register = () => {
                   </InputIcon>
                   <FormInput
                     type="text"
-                    name="surname"
-                    placeholder="Enter your last name"
-                    value={formData.surname}
+                    name="lastName"
+                    placeholder="Last name"
+                    value={formData.lastName}
                     onChange={handleChange}
-                    error={formErrors.surname}
+                    error={formErrors.lastName}
                   />
                 </InputWrapper>
-                {formErrors.surname && (
-                  <ErrorText>{formErrors.surname}</ErrorText>
+                {formErrors.lastName && (
+                  <ErrorText>{formErrors.lastName}</ErrorText>
                 )}
               </FormGroup>
             </FormRow>
             
             <FormGroup>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Email Address</FormLabel>
               <InputWrapper>
                 <InputIcon>
                   <FaEnvelope />
@@ -234,55 +230,56 @@ const Register = () => {
               )}
             </FormGroup>
             
-            <FormGroup>
-              <FormLabel>Password</FormLabel>
-              <InputWrapper>
-                <InputIcon>
-                  <FaLock />
-                </InputIcon>
-                <FormInput
-                  type="password"
-                  name="password"
-                  placeholder="Create a password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  error={formErrors.password}
-                />
-              </InputWrapper>
-              {formErrors.password && (
-                <ErrorText>{formErrors.password}</ErrorText>
-              )}
-            </FormGroup>
+            <FormRow>
+              <FormGroup>
+                <FormLabel>Password</FormLabel>
+                <InputWrapper>
+                  <InputIcon>
+                    <FaLock />
+                  </InputIcon>
+                  <FormInput
+                    type="password"
+                    name="password"
+                    placeholder="Create a password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    error={formErrors.password}
+                  />
+                </InputWrapper>
+                {formErrors.password && (
+                  <ErrorText>{formErrors.password}</ErrorText>
+                )}
+              </FormGroup>
+              
+              <FormGroup>
+                <FormLabel>Confirm Password</FormLabel>
+                <InputWrapper>
+                  <InputIcon>
+                    <FaLock />
+                  </InputIcon>
+                  <FormInput
+                    type="password"
+                    name="confirmPassword"
+                    placeholder="Confirm your password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    error={formErrors.confirmPassword}
+                  />
+                </InputWrapper>
+                {formErrors.confirmPassword && (
+                  <ErrorText>{formErrors.confirmPassword}</ErrorText>
+                )}
+              </FormGroup>
+            </FormRow>
             
-            <FormGroup>
-              <FormLabel>Confirm Password</FormLabel>
-              <InputWrapper>
-                <InputIcon>
-                  <FaLock />
-                </InputIcon>
-                <FormInput
-                  type="password"
-                  name="confirmPassword"
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  error={formErrors.confirmPassword}
-                />
-              </InputWrapper>
-              {formErrors.confirmPassword && (
-                <ErrorText>{formErrors.confirmPassword}</ErrorText>
-              )}
-            </FormGroup>
-            
-            <SubmitButton type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating Account...' : 'Create Account'}
+            <SubmitButton disabled={isSubmitting}>
+              {isSubmitting ? 'Creating account...' : 'Create Account'}
             </SubmitButton>
+            
+            <LoginText>
+              Already have an account? <LoginLink to="/login">Log in</LoginLink>
+            </LoginText>
           </RegisterForm>
-          
-          <RegisterFooter>
-            <span>Already have an account?</span>
-            <LoginLink to="/login">Sign In</LoginLink>
-          </RegisterFooter>
         </RegisterCard>
       </div>
     </RegisterContainer>
@@ -295,44 +292,75 @@ const RegisterContainer = styled.div`
   justify-content: center;
   min-height: calc(100vh - 160px);
   padding: 2rem 0;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+  
+  @media (max-width: 768px) {
+    padding: 1rem 0;
+  }
 `;
 
 const RegisterCard = styled.div`
   background-color: white;
-  border-radius: 10px;
-  box-shadow: ${({ theme }) => theme.shadows.medium};
-  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  padding: 2.5rem;
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
+  transition: transform 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-5px);
+  }
+  
+  @media (max-width: 768px) {
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
 `;
 
 const RegisterHeader = styled.div`
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 1.8rem;
+  }
 `;
 
 const RegisterTitle = styled.h1`
-  font-size: 2rem;
-  color: ${({ theme }) => theme.colors.text};
-  margin-bottom: 0.5rem;
+  font-size: 1.9rem;
+  color: #2A3F62;
+  margin-bottom: 0.8rem;
+  font-weight: 700;
+  
+  @media (max-width: 768px) {
+    font-size: 1.6rem;
+  }
 `;
 
 const RegisterSubtitle = styled.p`
-  color: ${({ theme }) => theme.colors.textLight};
+  color: #7C8DB5;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
 `;
 
 const ErrorMessage = styled.div`
   display: flex;
   align-items: center;
-  background-color: ${({ theme }) => `${theme.colors.error}20`};
-  color: ${({ theme }) => theme.colors.error};
+  background-color: rgba(237, 76, 92, 0.15);
+  color: #ED4C5C;
   padding: 1rem;
-  border-radius: 5px;
+  border-radius: 8px;
   margin-bottom: 1.5rem;
   
   svg {
-    margin-right: 0.5rem;
+    margin-right: 0.8rem;
+    font-size: 1.2rem;
   }
 `;
 
@@ -343,22 +371,23 @@ const RegisterForm = styled.form`
 const FormRow = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 1.2rem;
   
-  @media (max-width: ${({ theme }) => theme.breakpoints.sm}) {
+  @media (max-width: 576px) {
     grid-template-columns: 1fr;
   }
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.8rem;
 `;
 
 const FormLabel = styled.label`
   display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: ${({ theme }) => theme.colors.text};
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+  color: #2A3F62;
+  font-size: 0.95rem;
 `;
 
 const InputWrapper = styled.div`
@@ -368,62 +397,109 @@ const InputWrapper = styled.div`
 const InputIcon = styled.div`
   position: absolute;
   top: 50%;
-  left: 1rem;
+  left: 1.2rem;
   transform: translateY(-50%);
-  color: ${({ theme }) => theme.colors.textLight};
+  color: #7C8DB5;
 `;
 
 const FormInput = styled.input`
   width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 1px solid ${({ error, theme }) => error ? theme.colors.error : theme.colors.gray};
-  border-radius: 5px;
+  padding: 0.9rem 1rem 0.9rem 3rem;
+  border: 2px solid ${({ error }) => error ? '#ED4C5C' : '#E4E9F2'};
+  border-radius: 8px;
   font-size: 1rem;
   outline: none;
-  transition: border-color 0.3s ease;
+  transition: all 0.3s ease;
+  background-color: #F8FAFC;
   
   &:focus {
-    border-color: ${({ error, theme }) => error ? theme.colors.error : theme.colors.primary};
+    border-color: ${({ error }) => error ? '#ED4C5C' : '#3772FF'};
+    box-shadow: 0 0 0 3px ${({ error }) => error ? 'rgba(237, 76, 92, 0.2)' : 'rgba(55, 114, 255, 0.2)'};
+    background-color: #FFFFFF;
+  }
+  
+  &::placeholder {
+    color: #A0AABA;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.8rem 1rem 0.8rem 3rem;
+    font-size: 0.95rem;
   }
 `;
 
 const ErrorText = styled.p`
-  color: ${({ theme }) => theme.colors.error};
-  font-size: 0.875rem;
+  color: #ED4C5C;
+  font-size: 0.85rem;
   margin-top: 0.5rem;
+  font-weight: 500;
+`;
+
+const PolicyText = styled.p`
+  font-size: 0.9rem;
+  color: #7C8DB5;
+  margin-bottom: 1.8rem;
+  line-height: 1.5;
+`;
+
+const PolicyLink = styled.a`
+  color: #3772FF;
+  font-weight: 600;
+  text-decoration: none;
+  
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
 const SubmitButton = styled.button`
   width: 100%;
-  padding: 0.75rem;
-  background-color: ${({ theme }) => theme.colors.primary};
+  padding: 1rem;
+  background: linear-gradient(90deg, #3772FF 0%, #3D80FF 100%);
   color: white;
   border: none;
-  border-radius: 5px;
-  font-size: 1rem;
-  font-weight: 500;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(55, 114, 255, 0.3);
+  margin-top: 0.5rem;
+  letter-spacing: 0.5px;
   
   &:hover {
-    background-color: ${({ theme }) => theme.colors.primaryDark};
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(55, 114, 255, 0.4);
+    background: linear-gradient(90deg, #3066E8 0%, #3772FF 100%);
+  }
+  
+  &:active {
+    transform: translateY(0);
   }
   
   &:disabled {
-    background-color: ${({ theme }) => theme.colors.gray};
+    background: #A0AABA;
     cursor: not-allowed;
+    box-shadow: none;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.9rem;
+    font-size: 1rem;
   }
 `;
 
 const RegisterFooter = styled.div`
   text-align: center;
-  color: ${({ theme }) => theme.colors.textLight};
+  color: #7C8DB5;
+  font-size: 0.95rem;
+  margin-top: 2rem;
 `;
 
 const LoginLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
+  color: #3772FF;
   margin-left: 0.5rem;
-  font-weight: 500;
+  font-weight: 600;
   
   &:hover {
     text-decoration: underline;
@@ -432,8 +508,8 @@ const LoginLink = styled(Link)`
 
 const SuccessCard = styled.div`
   background-color: white;
-  border-radius: 10px;
-  box-shadow: ${({ theme }) => theme.shadows.medium};
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
   padding: 3rem 2rem;
   width: 100%;
   max-width: 600px;
@@ -442,19 +518,20 @@ const SuccessCard = styled.div`
 `;
 
 const SuccessIcon = styled.div`
-  font-size: 4rem;
-  color: ${({ theme }) => theme.colors.success};
+  font-size: 4.5rem;
+  color: #4CAF50;
   margin-bottom: 1.5rem;
 `;
 
 const SuccessTitle = styled.h2`
   font-size: 2rem;
-  color: ${({ theme }) => theme.colors.text};
+  color: #2A3F62;
   margin-bottom: 1rem;
+  font-weight: 700;
 `;
 
 const SuccessMessage = styled.p`
-  color: ${({ theme }) => theme.colors.textLight};
+  color: #7C8DB5;
   margin-bottom: 2rem;
   font-size: 1.1rem;
   line-height: 1.6;
@@ -463,45 +540,52 @@ const SuccessMessage = styled.p`
 const SuccessActions = styled.div`
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  gap: 1.2rem;
   
-  @media (max-width: ${({ theme }) => theme.breakpoints.sm}) {
+  @media (max-width: 576px) {
     flex-direction: column;
     align-items: center;
   }
 `;
 
 const PrimaryButton = styled.button`
-  padding: 0.8rem 2rem;
-  background-color: ${({ theme }) => theme.colors.primary};
+  padding: 0.9rem 2.5rem;
+  background: linear-gradient(90deg, #3772FF 0%, #3D80FF 100%);
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(55, 114, 255, 0.3);
   
   &:hover {
-    background-color: ${({ theme }) => theme.colors.primaryDark};
-    transform: translateY(-3px);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(55, 114, 255, 0.4);
   }
 `;
 
 const SecondaryButton = styled.button`
-  padding: 0.8rem 2rem;
+  padding: 0.9rem 2.5rem;
   background-color: transparent;
-  color: ${({ theme }) => theme.colors.primary};
-  border: 2px solid ${({ theme }) => theme.colors.primary};
-  border-radius: 5px;
+  color: #3772FF;
+  border: 2px solid #3772FF;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   
   &:hover {
-    background-color: ${({ theme }) => theme.colors.primary};
-    color: white;
-    transform: translateY(-3px);
+    background-color: rgba(55, 114, 255, 0.1);
+    transform: translateY(-2px);
   }
+`;
+
+const LoginText = styled.p`
+  text-align: center;
+  color: #7C8DB5;
+  font-size: 0.95rem;
+  margin-top: 1.5rem;
 `;
 
 export default Register;

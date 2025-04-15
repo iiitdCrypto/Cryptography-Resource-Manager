@@ -14,33 +14,26 @@ router.post('/register', authController.register);
 // @route   POST api/auth/verify-otp
 // @desc    Verify email with OTP
 // @access  Public
-router.post('/verify-otp', authController.verifyEmailWithOTP);
+router.post('/verify-otp', authController.verifyEmail);
 
 // @route   POST api/auth/resend-otp
-// @desc    Resend OTP for email verification
+// @desc    Resend OTP verification code
 // @access  Public
-router.post('/resend-otp', authController.resendVerificationOTP);
+router.post('/resend-otp', authController.resendOTP);
 
 // @route   POST api/auth/login
 // @desc    Login user
 // @access  Public
 router.post('/login', authController.login);
 
-// @route   POST api/auth/forgot-password
-// @desc    Request password reset (with OTP)
-// @access  Public
-router.post('/forgot-password', authController.forgotPassword);
-
-// @route   POST api/auth/reset-password
-// @desc    Reset password with OTP
-// @access  Public
-router.post('/reset-password', authController.resetPassword);
-
-// @route   GET api/auth/user
-// @desc    Get logged in user
+// @route   GET api/auth/profile
+// @desc    Get user profile
 // @access  Private
-router.get('/user', auth, (req, res) => {
-  res.json(req.user);
-});
+router.get('/profile', auth, authController.getProfile);
+
+// @route   PUT api/auth/profile
+// @desc    Update user profile
+// @access  Private
+router.put('/profile', auth, authController.updateProfile);
 
 module.exports = router;

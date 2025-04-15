@@ -100,10 +100,20 @@ const Register = () => {
     setRegistrationSuccess(true);
     setShowOtpVerification(false);
     
+<<<<<<< HEAD
     // Redirect to login page instead of dashboard
     setTimeout(() => {
       navigate('/login');
     }, 2000);
+=======
+    // If token is provided, store it and navigate to dashboard
+    if (data?.token) {
+      localStorage.setItem('token', data.token);
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000);
+    }
+>>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
   };
   
   if (showOtpVerification) {
@@ -141,8 +151,13 @@ const Register = () => {
               Your account has been verified and created successfully.
             </SuccessMessage>
             <SuccessActions>
+<<<<<<< HEAD
               <PrimaryButton onClick={() => navigate('/login')}>
                 Go to Login
+=======
+              <PrimaryButton onClick={() => navigate('/dashboard')}>
+                Go to Dashboard
+>>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
               </PrimaryButton>
             </SuccessActions>
           </SuccessCard>

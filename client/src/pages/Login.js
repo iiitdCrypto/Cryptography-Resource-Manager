@@ -66,16 +66,12 @@ const Login = () => {
         if (result?.needsVerification) {
           setShowOtpVerification(true);
         } else {
-<<<<<<< HEAD
           // Redirect based on role
           if (result.user && (result.user.role === 'admin' || result.user.role === 'authorized')) {
             navigate('/dashboard');
           } else {
             navigate('/');  // Redirect to home page for regular users
           }
-=======
-          navigate('/dashboard');
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
         }
       } catch (error) {
         setLoginError(error.response?.data?.error || error.message || 'Login failed. Please try again.');
@@ -89,7 +85,6 @@ const Login = () => {
     // When OTP verification is successful
     if (data?.token) {
       localStorage.setItem('token', data.token);
-<<<<<<< HEAD
       
       // Redirect based on role
       if (data.user && (data.user.role === 'admin' || data.user.role === 'authorized')) {
@@ -97,9 +92,6 @@ const Login = () => {
       } else {
         navigate('/');  // Redirect to home page for regular users
       }
-=======
-      navigate('/dashboard');
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
     }
   };
   

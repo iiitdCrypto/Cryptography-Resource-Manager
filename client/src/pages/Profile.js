@@ -2,11 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FaUser, FaEnvelope, FaExclamationCircle, FaCheckCircle, FaSignOutAlt } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
-<<<<<<< HEAD
 import authService from '../services/authService';
-=======
-import axios from 'axios';
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
 import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
@@ -30,7 +26,6 @@ const Profile = () => {
   const [updateError, setUpdateError] = useState('');
   
   useEffect(() => {
-<<<<<<< HEAD
     const fetchProfile = async () => {
       try {
         if (authService.isAuthenticated()) {
@@ -51,19 +46,6 @@ const Profile = () => {
     
     fetchProfile();
   }, []);
-=======
-    if (user) {
-      // Split name into first and last name if available
-      const nameParts = user.name ? user.name.split(' ') : ['', ''];
-      
-      setProfileData({
-        name: nameParts[0] || '',
-        surname: nameParts.slice(1).join(' ') || '',
-        email: user.email || ''
-      });
-    }
-  }, [user]);
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
   
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -156,28 +138,11 @@ const Profile = () => {
       setUpdateError('');
       
       try {
-<<<<<<< HEAD
         await authService.updateProfile({
           firstName: profileData.name.trim(),
           lastName: profileData.surname.trim(),
           email: profileData.email
         });
-=======
-        const token = localStorage.getItem('token');
-        
-        await axios.put(
-          'http://localhost:5001/api/users/profile',
-          {
-            name: `${profileData.name} ${profileData.surname}`.trim(),
-            email: profileData.email
-          },
-          {
-            headers: {
-              'x-auth-token': token
-            }
-          }
-        );
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
         
         setUpdateSuccess('Profile updated successfully');
       } catch (error) {

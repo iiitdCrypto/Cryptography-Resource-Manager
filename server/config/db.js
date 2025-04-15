@@ -1,9 +1,6 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
 // Create a connection pool
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
@@ -12,210 +9,49 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  multipleStatements: true
 });
 
 // Function to execute SQL queries
-async function executeQuery(sql, params) {
+async function executeQuery(sql, params = []) {
   try {
-    const [rows] = await pool.execute(sql, params);
-    return rows;
-  } catch (error) {
-    console.error('Database query error:', error);
-=======
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
-let pool = null;
-
-const initializeDatabase = async () => {
-  try {
-    // First try to create database if it doesn't exist
-    const tempPool = mysql.createPool({
-<<<<<<< HEAD
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-=======
-      host: 'localhost',
-      user: 'root',
-      password: '12345',
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0
-    });
-
-<<<<<<< HEAD
-    await tempPool.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME}`);
-=======
-    await tempPool.query('CREATE DATABASE IF NOT EXISTS cryptography_rm');
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
-    await tempPool.end();
-
-    // Now create the main pool with the database selected
-    pool = mysql.createPool({
-<<<<<<< HEAD
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-=======
-      host: 'localhost',
-      user: 'root',
-      password: '12345',
-      database: 'cryptography_rm',
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-      multipleStatements: true
-    });
-
-    // Test connection
-    const connection = await pool.getConnection();
-    console.log('Database connection established successfully');
-    
-    // Initialize tables
-    await initializeTables(connection);
-    
-    connection.release();
-    return pool;
-  } catch (error) {
-    console.error('Database initialization error:', error);
-    process.exit(1);
-  }
-};
-
-const initializeTables = async (connection) => {
-  try {
-<<<<<<< HEAD
-    // Check if tables already exist
-    const [tables] = await connection.query(
-      "SELECT table_name FROM information_schema.tables WHERE table_schema = ?",
-      [process.env.DB_NAME]
-    );
-    
-    // If tables already exist, skip initialization
-    if (tables.length > 0) {
-      console.log('Database tables already exist, skipping initialization');
-      return;
-    }
-    
-    console.log('Initializing database tables...');
-    
-    // First, disable foreign key checks to avoid constraint issues
-    await connection.query('SET FOREIGN_KEY_CHECKS = 0;');
-=======
-    // Get all tables in the database
-    const [tables] = await connection.query(
-      "SELECT table_name FROM information_schema.tables WHERE table_schema = 'cryptography_rm'"
-    );
-    
-    // First, disable foreign key checks to avoid constraint issues
-    await connection.query('SET FOREIGN_KEY_CHECKS = 0;');
-    
-    try {
-      // Drop tables that might reference users first
-      // Known child tables
-      const childTables = [
-        'event_registrations',
-        'events',
-        'audit_logs',
-        'articles',
-        'resources',
-        'user_settings',
-        'user_permissions',
-        'visitor_logs'
-      ];
-      
-      // Drop all known child tables first
-      for (const tableName of childTables) {
-        await connection.query(`DROP TABLE IF EXISTS ${tableName};`);
+    // Handle transactions separately
+    if (sql.trim().toUpperCase() === 'START TRANSACTION' || 
+        sql.trim().toUpperCase() === 'COMMIT' || 
+        sql.trim().toUpperCase() === 'ROLLBACK') {
+      const connection = await pool.getConnection();
+      try {
+        await connection.query(sql);
+        connection.release();
+        return { affectedRows: 0 };
+      } catch (err) {
+        connection.release();
+        throw err;
       }
-      
-      // Drop any remaining tables that might exist
-      for (const table of tables) {
-        if (!childTables.includes(table.table_name) && table.table_name !== 'users') {
-          await connection.query(`DROP TABLE IF EXISTS ${table.table_name};`);
-        }
-      }
-      
-      // Finally drop the users table
-      await connection.query('DROP TABLE IF EXISTS users;');
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
-    } finally {
-      // Re-enable foreign key checks
-      await connection.query('SET FOREIGN_KEY_CHECKS = 1;');
     }
 
-    // Create tables in correct order (parent tables first)
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-<<<<<<< HEAD
-        first_name VARCHAR(100) NOT NULL,
-        last_name VARCHAR(100) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        role ENUM('regular', 'authorized', 'admin') DEFAULT 'regular',
-=======
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        role ENUM('user', 'admin') DEFAULT 'user',
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
-        email_verified BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS user_permissions (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        permission VARCHAR(50) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id)
-      );
-
-      CREATE TABLE IF NOT EXISTS user_settings (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        setting_key VARCHAR(50) NOT NULL,
-        setting_value TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id)
-      );
-
-      CREATE TABLE IF NOT EXISTS articles (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        content TEXT NOT NULL,
-        description TEXT,
-        category VARCHAR(50),
-        source VARCHAR(255),
-        url VARCHAR(512),
-        author_id INT,
-        image_url VARCHAR(255),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL
-      );
-    `);
-
-    // Insert sample data
-    await connection.query(`
-      INSERT INTO articles (title, content, description, category, source) 
-      VALUES 
-      ('Introduction to Cryptography', 'Sample content...', 'Basic introduction', 'cryptography', 'Internal'),
-      ('Latest in Encryption', 'Sample content...', 'New developments', 'security', 'Internal');
-    `);
-
-    console.log('Tables initialized successfully with sample data');
+    // For normal queries
+    const [result] = await pool.execute(sql, params);
+    return result;
   } catch (error) {
-    console.error('Error initializing tables:', error);
+    console.error('Query execution error:', error.message);
     throw error;
   }
-};
+}
 
-// Initialize database connection
-initializeDatabase().catch(console.error);
+// Function to connect to the database
+async function connectDB() {
+  try {
+    const connection = await pool.getConnection();
+    console.log('Database connected successfully');
+    connection.release();
+    return true;
+  } catch (error) {
+    console.error('Database connection error:', error);
+    process.exit(1);
+  }
+}
 
 // Check if a table exists
 const checkTable = async (tableName) => {
@@ -245,83 +81,41 @@ const checkColumn = async (tableName, columnName) => {
   }
 };
 
-// Execute a database query
-const executeQuery = async (sql, params = []) => {
-  try {
-    // Handle transactions separately
-    if (sql.trim().toUpperCase() === 'START TRANSACTION' || 
-        sql.trim().toUpperCase() === 'COMMIT' || 
-        sql.trim().toUpperCase() === 'ROLLBACK') {
-      const connection = await pool.getConnection();
-      try {
-        await connection.query(sql);
-        connection.release();
-        return { affectedRows: 0 };
-      } catch (err) {
-        connection.release();
-        throw err;
-      }
-    }
-
-    // For normal queries
-    const [result] = await pool.execute(sql, params);
-    return result;
-  } catch (error) {
-    console.error('Query execution error:', error.message);
-<<<<<<< HEAD
-=======
->>>>>>> 8d83eb9c7d4db7ffceaf666aeaf0a8ec04734938
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
-    throw error;
-  }
-}
-
-// Function to connect to the database
-async function connectDB() {
-  try {
-    const connection = await pool.getConnection();
-    console.log('Database connected successfully');
-    connection.release();
-    return true;
-  } catch (error) {
-    console.error('Database connection error:', error);
-    process.exit(1);
-  }
-}
-
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-module.exports = { executeQuery, connectDB, pool };
-=======
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
-// Begin a transaction and get a connection
+// Transaction related functions
 const beginTransaction = async () => {
   const connection = await pool.getConnection();
   await connection.beginTransaction();
   return connection;
 };
 
-// Commit a transaction
 const commitTransaction = async (connection) => {
   await connection.commit();
   connection.release();
 };
 
-// Rollback a transaction
 const rollbackTransaction = async (connection) => {
   await connection.rollback();
   connection.release();
 };
 
-// Execute a query within a transaction
 const executeTransactionQuery = async (connection, sql, params = []) => {
   const [result] = await connection.execute(sql, params);
   return result;
 };
 
+// Function to ensure email_verified column exists in users table
+const ensureEmailVerifiedExists = async () => {
+  const hasColumn = await checkColumn('users', 'email_verified');
+  if (!hasColumn) {
+    await executeQuery('ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE');
+    console.log('Added email_verified column to users table');
+  }
+  return true;
+};
+
+// Export all database functions
 module.exports = {
-  connectDB: initializeDatabase, // Add this line
+  connectDB,
   getPool: () => pool,
   executeQuery,
   beginTransaction,
@@ -330,20 +124,5 @@ module.exports = {
   executeTransactionQuery,
   checkTable,
   checkColumn,
-<<<<<<< HEAD
-  
-  // Function to ensure email_verified column exists in users table
-  ensureEmailVerifiedExists: async () => {
-    const hasColumn = await checkColumn('users', 'email_verified');
-    if (!hasColumn) {
-      await executeQuery('ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE');
-      console.log('Added email_verified column to users table');
-    }
-    return true;
-  }
-};
-=======
   ensureEmailVerifiedExists
 };
->>>>>>> 8d83eb9c7d4db7ffceaf666aeaf0a8ec04734938
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac

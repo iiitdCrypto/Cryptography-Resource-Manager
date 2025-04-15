@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 -- Users table with role-based access control
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -125,13 +124,10 @@ BEGIN
 END;
 
 -- Visitor logs table for analytics
-=======
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
 CREATE TABLE IF NOT EXISTS visitor_logs (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT,
   endpoint VARCHAR(255) NOT NULL,
-<<<<<<< HEAD
   ip_address VARCHAR(45),
   timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -142,8 +138,3 @@ INSERT IGNORE INTO permissions (name, description) VALUES
 ('access_dashboard', 'Can access the dashboard'),
 ('manage_users', 'Can manage user accounts'),
 ('manage_contents', 'Can manage resources and events');
-=======
-  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-);
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac

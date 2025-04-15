@@ -1,20 +1,9 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-<<<<<<< HEAD
 import { jwtDecode } from 'jwt-decode';
 import authService from '../services/authService';
 
 const AuthContext = createContext();
 
-=======
-import axios from 'axios';
-import { jwtDecode } from 'jwt-decode'; // Changed to use named import with curly braces
-
-const AuthContext = createContext();
-
-// Define the API URL - let's check if we're using the correct URL
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
-
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
@@ -23,7 +12,6 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-<<<<<<< HEAD
     const initializeAuth = async () => {
       const token = localStorage.getItem('token');
       if (token) {
@@ -48,38 +36,6 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-=======
-    // Check if user is already logged in
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        // Verify token expiration
-        const decodedToken = jwtDecode(token); // Changed from jwt_decode to jwtDecode
-        const currentTime = Date.now() / 1000;
-        
-        if (decodedToken.exp < currentTime) {
-          // Token expired
-          localStorage.removeItem('token');
-          setUser(null);
-        } else {
-          // Set user from token
-          setUser({
-            id: decodedToken.id,
-            name: decodedToken.name || decodedToken.email.split('@')[0],
-            email: decodedToken.email,
-            role: decodedToken.role
-          });
-          
-          // Set axios default header
-          axios.defaults.headers.common['x-auth-token'] = token;
-        }
-      } catch (err) {
-        localStorage.removeItem('token');
-        setUser(null);
-      }
-    }
-    setLoading(false);
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
   }, []);
 
   // Register user
@@ -245,7 +201,6 @@ export const AuthProvider = ({ children }) => {
       // Set axios default header
       axios.defaults.headers.common['x-auth-token'] = res.data.token;
       
-<<<<<<< HEAD
       // Set user state with the data from response
       setUser({
         id: res.data.id,
@@ -265,12 +220,6 @@ export const AuthProvider = ({ children }) => {
           role: res.data.role
         }
       };
-=======
-      // Set user state with the user data from response
-      setUser(res.data.user);
-      
-      return res.data;
->>>>>>> 82939576ee37b12dba67578adf111e420d0654ac
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
       throw err;

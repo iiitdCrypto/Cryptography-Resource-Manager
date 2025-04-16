@@ -68,7 +68,7 @@ const AddResource = ({ onClose, onResourceAdded }) => {
         fileData.append('file', selectedFile);
 
         // Upload file first
-        const uploadResponse = await axios.post('http://localhost:5001/api/upload', fileData, {
+        const uploadResponse = await axios.post('http://0.0.0.0:5001/api/upload', fileData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
@@ -83,7 +83,7 @@ const AddResource = ({ onClose, onResourceAdded }) => {
         url: fileUrl
       };
 
-      const response = await axios.post('http://localhost:5001/api/resources', resourceData);
+      const response = await axios.post('http://0.0.0.0:5001/api/resources', resourceData);
       onResourceAdded(response.data);
       onClose();
     } catch (err) {

@@ -6,6 +6,11 @@ const { executeQuery } = require('../config/db');
 const auth = require('../middleware/auth');
 const authController = require('../controllers/authController');
 
+// @route   PUT api/auth/password
+// @desc    Update user password
+// @access  Private
+router.put('/users/password', auth, authController.updatePassword);
+
 // @route   POST api/auth/register
 // @desc    Register user with email OTP verification
 // @access  Public
@@ -14,7 +19,7 @@ router.post('/register', authController.register);
 // @route   POST api/auth/verify-otp
 // @desc    Verify email with OTP
 // @access  Public
-router.post('/verify-otp', authController.verifyEmail);
+router.post('/verify-otp', authController.verifyOTP);
 
 // @route   POST api/auth/resend-otp
 // @desc    Resend OTP verification code

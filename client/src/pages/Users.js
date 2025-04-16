@@ -19,7 +19,7 @@ const Users = () => {
       
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5001/api/admin/users', {
+        const response = await axios.get('http://0.0.0.0:5001/api/admin/users', {
           headers: {
             'x-auth-token': localStorage.getItem('token')
           }
@@ -44,7 +44,7 @@ const Users = () => {
   const handleDeleteUser = async (id) => {
     if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       try {
-        await axios.delete(`http://localhost:5001/api/admin/users/${id}`, {
+        await axios.delete(`http://0.0.0.0:5001/api/admin/users/${id}`, {
           headers: {
             'x-auth-token': localStorage.getItem('token')
           }

@@ -83,7 +83,7 @@ const OtpVerification = ({ email, onSuccess, showResend = true }) => {
     setError('');
     
     try {
-      const response = await axios.post('/api/auth/verify-otp', {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/verify-otp`, {
         email,
         otp: otpValue
       });
@@ -358,4 +358,4 @@ const ResendButton = styled.button`
   }
 `;
 
-export default OtpVerification; 
+export default OtpVerification;

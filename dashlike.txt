@@ -324,7 +324,7 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'", "trusted.cdn.com"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "cdn.example.com"],
-      connectSrc: ["'self'", "api.example.com", "ws://localhost:3000"]
+      connectSrc: ["'self'", "api.example.com", "ws://0.0.0.0:3000"]
     }
   }
 }));

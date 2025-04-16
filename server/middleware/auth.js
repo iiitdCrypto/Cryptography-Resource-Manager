@@ -2,6 +2,11 @@ const jwt = require('jsonwebtoken');
 const { executeQuery } = require('../config/db');
 const { attachPermissions } = require('./permissions');
 
+// Helper function to check if the route is profile-related
+const isProfileRoute = (path) => {
+  return path.includes('/api/auth/profile') || path.includes('/api/users/profile');
+};
+
 // Verify JWT token middleware
 const auth = async (req, res, next) => {
   // Skip auth check for dashboard routes
@@ -36,8 +41,12 @@ const auth = async (req, res, next) => {
     // Add user info to request
     req.user = user[0];
     
-    // Attach user permissions
-    await attachPermissions(req, res, next);
+    // Skip permission checks for profile routes
+    if (!isProfileRoute(req.path)) {
+      await attachPermissions(req, res, next);
+    } else {
+      next();
+    }
   } catch (err) {
     console.error('Auth middleware error:', err.message);
     

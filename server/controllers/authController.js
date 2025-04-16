@@ -4,6 +4,39 @@ const asyncHandler = require('express-async-handler');
 const { executeQuery } = require('../config/db');
 const { sendOTPEmail } = require('../utils/emailService');
 
+// @desc    Update user password
+// @route   PUT /api/auth/password
+// @access   Private
+const updatePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    res.status(400);
+    throw new Error('Current password and new password are required');
+  }
+
+  const user = await executeQuery('SELECT * FROM users WHERE id = ?', [req.user.id]);
+  
+  if (user.length === 0) {
+    console.error('User not found for email:', email);
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  const isValid = await bcrypt.compare(currentPassword, user[0].password);
+  if (!isValid) {
+    res.status(401);
+    throw new Error('Current password is incorrect');
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+  await executeQuery('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.user.id]);
+
+  res.json({ success: true, message: 'Password updated successfully' });
+});
+
 // Generate JWT Token
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
@@ -78,8 +111,10 @@ const register = asyncHandler(async (req, res) => {
 // @desc    Verify email with OTP
 // @route   POST /api/auth/verify
 // @access  Public
-const verifyEmail = asyncHandler(async (req, res) => {
+const verifyOTP = asyncHandler(async (req, res) => {
+  console.log('Starting OTP verification for email:', req.body.email);
   const { email, otp } = req.body;
+  console.log('Verification attempt - Email:', email, 'OTP:', otp);
 
   if (!email || !otp) {
     res.status(400);
@@ -92,16 +127,19 @@ const verifyEmail = asyncHandler(async (req, res) => {
   );
 
   if (user.length === 0) {
+    console.error('User not found for email:', email);
     res.status(404);
     throw new Error('User not found');
   }
 
   if (!user[0].token || user[0].token !== otp) {
+    console.error('OTP mismatch - Stored:', user[0].token, 'Received:', otp);
     res.status(400);
     throw new Error('Invalid OTP');
   }
 
   if (new Date() > new Date(user[0].expires_at)) {
+    console.error('OTP expired - Expiry time:', user[0].expires_at);
     res.status(400);
     throw new Error('OTP has expired');
   }
@@ -309,9 +347,10 @@ const updateProfile = asyncHandler(async (req, res) => {
 
 module.exports = {
   register,
-  verifyEmail,
+  verifyOTP,
   login,
   resendOTP,
   getProfile,
-  updateProfile
+  updateProfile,
+  updatePassword
 };

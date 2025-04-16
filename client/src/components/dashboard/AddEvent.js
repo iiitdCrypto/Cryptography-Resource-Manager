@@ -55,7 +55,7 @@ const AddEvent = ({ onClose, onEventAdded }) => {
         imageData.append('image', selectedImage);
 
         // Upload image first
-        const uploadResponse = await axios.post('http://localhost:5001/api/upload', imageData, {
+        const uploadResponse = await axios.post('http://0.0.0.0:5001/api/upload', imageData, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
@@ -70,7 +70,7 @@ const AddEvent = ({ onClose, onEventAdded }) => {
         imageUrl
       };
 
-      const response = await axios.post('http://localhost:5001/api/events', eventData);
+      const response = await axios.post('http://0.0.0.0:5001/api/events', eventData);
       onEventAdded(response.data);
       onClose();
     } catch (err) {

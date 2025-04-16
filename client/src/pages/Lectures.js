@@ -12,7 +12,7 @@ const Lectures = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/courses', {
+        const response = await axios.get('http://0.0.0.0:5001/api/courses', {
           headers: {
             'x-auth-token': localStorage.getItem('token')
           }
@@ -31,7 +31,7 @@ const Lectures = () => {
       const fetchLectures = async () => {
         setLoading(true);
         try {
-          const response = await axios.get(`http://localhost:5001/api/lectures/${selectedCourse}`, {
+          const response = await axios.get(`http://0.0.0.0:5001/api/lectures/${selectedCourse}`, {
             headers: {
               'x-auth-token': localStorage.getItem('token')
             }

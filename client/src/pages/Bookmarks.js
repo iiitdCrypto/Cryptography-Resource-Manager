@@ -19,7 +19,7 @@ const Bookmarks = () => {
       
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5001/api/bookmarks', {
+        const response = await axios.get('http://0.0.0.0:5001/api/bookmarks', {
           headers: {
             'x-auth-token': localStorage.getItem('token')
           }
@@ -43,7 +43,7 @@ const Bookmarks = () => {
   
   const handleRemoveBookmark = async (id) => {
     try {
-      await axios.delete(`http://localhost:5001/api/bookmarks/${id}`, {
+      await axios.delete(`http://0.0.0.0:5001/api/bookmarks/${id}`, {
         headers: {
           'x-auth-token': localStorage.getItem('token')
         }

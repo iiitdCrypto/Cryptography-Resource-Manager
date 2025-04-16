@@ -39,7 +39,7 @@ const Articles = () => {
   const fetchArticles = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5001/api/iacr-news');
+      const response = await axios.get('http://0.0.0.0:5001/api/iacr-news');
       
       if (response.data) {
         const filteredItems = response.data

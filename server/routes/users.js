@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
+const authController = require('../controllers/authController');
 const auth = require('../middleware/auth');
 const { isAdmin } = require('../middleware/permissions');
 
@@ -40,6 +41,11 @@ router.post('/resend-otp', userController.resendOTP);
 // @desc    Login user
 // @access  Public
 router.post('/login', userController.loginUser);
+
+// @route   PUT /api/users/password
+// @desc    Update user password
+// @access  Private
+router.put('/password', auth, authController.updatePassword);
 
 // @route   GET /api/users/me
 // @desc    Get user profile

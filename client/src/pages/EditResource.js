@@ -36,7 +36,7 @@ const EditResource = () => {
       
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:5001/api/resources/${id}`, {
+        const response = await axios.get(`http://0.0.0.0:5001/api/resources/${id}`, {
           headers: {
             'x-auth-token': localStorage.getItem('token')
           }
@@ -151,7 +151,7 @@ const EditResource = () => {
         const token = localStorage.getItem('token');
         
         await axios.put(
-          `http://localhost:5001/api/resources/${id}`,
+          `http://0.0.0.0:5001/api/resources/${id}`,
           formData,
           {
             headers: {
@@ -176,7 +176,7 @@ const EditResource = () => {
         const token = localStorage.getItem('token');
         
         await axios.delete(
-          `http://localhost:5001/api/resources/${id}`,
+          `http://0.0.0.0:5001/api/resources/${id}`,
           {
             headers: {
               'x-auth-token': token

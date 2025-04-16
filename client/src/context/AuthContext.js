@@ -110,7 +110,7 @@ export const AuthProvider = ({ children }) => {
   const verifyEmail = async (token) => {
     try {
       setError(null);
-      const res = await axios.get(`http://localhost:5001/api/auth/verify/${token}`);
+      const res = await axios.get(`http://0.0.0.0:5001/api/auth/verify/${token}`);
       return res.data;
     } catch (err) {
       setError(err.response?.data?.message || 'Email verification failed');

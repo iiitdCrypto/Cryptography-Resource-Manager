@@ -27,7 +27,8 @@ app.use(cors());
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? process.env.CLIENT_URL : '*',
+  origin: ['http://localhost:3000', 'http://192.168.41.241:3000', process.env.CLIENT_URL],
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
   credentials: true
@@ -109,7 +110,7 @@ const PORT = process.env.PORT || 5001;
 // Function to find an available port
 const startServer = (port) => {
   try {
-    app.listen(port, () => {
+    app.listen(port, '0.0.0.0', () => {
       console.log(`Server running on port ${port}`);
     }).on('error', (err) => {
       if (err.code === 'EADDRINUSE') {

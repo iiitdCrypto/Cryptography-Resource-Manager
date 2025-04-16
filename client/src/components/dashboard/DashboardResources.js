@@ -19,7 +19,7 @@ const DashboardResources = () => {
   const fetchResources = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5001/api/resources');
+      const response = await axios.get('http://0.0.0.0:5001/api/resources');
       setResources(response.data);
     } catch (err) {
       setError('Failed to fetch resources');
@@ -46,7 +46,7 @@ const DashboardResources = () => {
   const handleDeleteResource = async (id) => {
     if (window.confirm('Are you sure you want to delete this resource?')) {
       try {
-        await axios.delete(`http://localhost:5001/api/resources/${id}`);
+        await axios.delete(`http://0.0.0.0:5001/api/resources/${id}`);
         setResources(resources.filter(resource => resource._id !== id));
       } catch (err) {
         console.error('Failed to delete resource:', err);

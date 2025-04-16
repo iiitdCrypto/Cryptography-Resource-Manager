@@ -30,22 +30,32 @@ class User {
   }
 
   static async updateById(id, updateData) {
+    if (!id || !updateData) {
+      throw new Error('Invalid update parameters');
+    }
+
     const allowedFields = ['first_name', 'last_name', 'email', 'role'];
     const updates = [];
     const values = [];
 
+    // Process regular fields
     for (const [key, value] of Object.entries(updateData)) {
-      if (allowedFields.includes(key)) {
+      if (allowedFields.includes(key) && value !== undefined && value !== null) {
         updates.push(`${key} = ?`);
         values.push(value);
       }
     }
 
+    // Handle password update
     if (updateData.password) {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(updateData.password, salt);
       updates.push('password = ?');
       values.push(hashedPassword);
+    }
+
+    if (updates.length === 0) {
+      return false;
     }
 
     values.push(id);
@@ -62,24 +72,9 @@ class User {
     return result.affectedRows > 0;
   }
 
-  static async getPermissions(userId) {
-    const permissions = await executeQuery(
-      `SELECT p.* FROM permissions p 
-       INNER JOIN user_permissions up ON p.id = up.permission_id 
-       WHERE up.user_id = ?`,
-      [userId]
-    );
-    return permissions;
-  }
-
-  static async hasPermission(userId, permissionName) {
-    const [permission] = await executeQuery(
-      `SELECT 1 FROM permissions p 
-       INNER JOIN user_permissions up ON p.id = up.permission_id 
-       WHERE up.user_id = ? AND p.name = ?`,
-      [userId, permissionName]
-    );
-    return !!permission;
+  static async getRole(userId) {
+    const [user] = await executeQuery('SELECT role FROM users WHERE id = ?', [userId]);
+    return user ? user.role : null;
   }
 }
 

@@ -11,7 +11,7 @@ const IACRNews = () => {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/iacr-news');
+        const response = await axios.get('http://0.0.0.0:5001/api/iacr-news');
         setNews(response.data);
         setLoading(false);
       } catch (err) {

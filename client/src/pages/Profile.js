@@ -230,13 +230,13 @@ const Profile = () => {
           
           <TabsContainer>
             <TabButton 
-              active={activeTab === 'profile'} 
+              $active={activeTab === 'profile'} 
               onClick={() => handleTabChange('profile')}
             >
               Profile Information
             </TabButton>
             <TabButton 
-              active={activeTab === 'password'} 
+              $active={activeTab === 'password'} 
               onClick={() => handleTabChange('password')}
             >
               Change Password
@@ -449,11 +449,11 @@ const TabButton = styled.button`
   padding: 1rem 1.5rem;
   background-color: transparent;
   border: none;
-  border-bottom: 3px solid ${({ active, theme }) => 
-    active ? theme.colors.primary : 'transparent'};
-  color: ${({ active, theme }) => 
-    active ? theme.colors.primary : theme.colors.textLight};
-  font-weight: ${({ active }) => active ? '600' : '400'};
+  border-bottom: 3px solid ${({ $active, theme }) => 
+    $active ? theme.colors.primary : 'transparent'};
+  color: ${({ $active, theme }) => 
+    $active ? theme.colors.primary : theme.colors.textLight};
+  font-weight: ${({ $active }) => $active ? '600' : '400'};
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;

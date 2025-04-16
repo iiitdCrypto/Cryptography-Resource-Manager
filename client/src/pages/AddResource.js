@@ -116,7 +116,7 @@ const AddResource = () => {
         const token = localStorage.getItem('token');
         
         const response = await axios.post(
-          'http://localhost:5001/api/resources',
+          'http://0.0.0.0:5001/api/resources',
           formData,
           {
             headers: {

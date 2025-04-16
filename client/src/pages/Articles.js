@@ -106,7 +106,7 @@ const Articles = () => {
             </SearchButton>
           </SearchForm>
           
-          <FilterContainer>
+          {/* <FilterContainer>
             <FilterIcon>
               <FaFilter />
             </FilterIcon>
@@ -118,7 +118,7 @@ const Articles = () => {
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </FilterSelect>
-          </FilterContainer>
+          </FilterContainer> */}
         </SearchFilterContainer>
         
         {error && <ErrorMessage>{error}</ErrorMessage>}

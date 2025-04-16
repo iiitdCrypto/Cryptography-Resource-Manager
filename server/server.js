@@ -22,16 +22,12 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Enable CORS for all routes
-app.use(cors());
-
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://192.168.41.241:3000', process.env.CLIENT_URL],
+  origin: ['http://localhost:3000', process.env.CLIENT_URL],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
 }));
 
 // Body parsing middleware

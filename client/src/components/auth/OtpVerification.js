@@ -114,12 +114,11 @@ const OtpVerification = ({ email, onSuccess, showResend = true }) => {
   // Resend OTP
   const resendOtp = async () => {
     if (timer > 0) return;
-    
     setResending(true);
     setError('');
     
     try {
-      await axios.post('/api/auth/resend-otp', { email });
+      await axios.post(`${process.env.REACT_APP_API_URL}/auth/resend-otp`, { email});
       setTimer(60);
       setResending(false);
     } catch (err) {

@@ -5,6 +5,8 @@ import ArticleCard from './ArticleCard';
 import { API_URL } from '../config';
 import './Articles.css';
 
+const API_BASE_URL = 'http://localhost:5001/api';  // Change from 0.0.0.0 to localhost
+
 const Articles = () => {
   const [articles, setArticles] = useState({ academic: [], news: [] });
   const [loading, setLoading] = useState(true);
@@ -16,7 +18,7 @@ const Articles = () => {
     const fetchArticles = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`${API_URL}/articles/all`, {
+        const response = await axios.get(`${API_BASE_URL}/articles/all`, {
           params: {
             page: currentPage,
             pageSize: itemsPerPage

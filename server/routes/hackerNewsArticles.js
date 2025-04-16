@@ -29,7 +29,7 @@ router.get('/hackernews', async (req, res) => {
         'User-Agent': 'Cryptography-Resource-Manager/1.0',
         'Accept': 'application/xml, text/xml, */*'
       },
-      timeout: 15000 // 15 second timeout
+      timeout: 15001 // 15 second timeout
     });
     
     const parser = new xml2js.Parser();

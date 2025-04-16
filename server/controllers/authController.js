@@ -111,7 +111,7 @@ const register = asyncHandler(async (req, res) => {
 // @desc    Verify email with OTP
 // @route   POST /api/auth/verify
 // @access  Public
-const verifyOTP = asyncHandler(async (req, res) => {
+const verifyOTP = async (req, res) => {
   console.log('Starting OTP verification for email:', req.body.email);
   const { email, otp } = req.body;
   console.log('Verification attempt - Email:', email, 'OTP:', otp);
@@ -166,7 +166,7 @@ const verifyOTP = asyncHandler(async (req, res) => {
     res.status(500);
     throw new Error('Verification failed: ' + error.message);
   }
-});
+};
 
 // @desc    Login user
 // @route   POST /api/auth/login
@@ -231,7 +231,7 @@ const login = asyncHandler(async (req, res) => {
 // @desc    Resend OTP verification code
 // @route   POST /api/auth/resend-otp
 // @access  Public
-const resendOTP = asyncHandler(async (req, res) => {
+const resendOTP = async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
@@ -288,7 +288,7 @@ const resendOTP = asyncHandler(async (req, res) => {
     res.status(500);
     throw new Error('Failed to resend verification code: ' + error.message);
   }
-});
+};
 
 // @desc    Get user profile
 // @route   GET /api/auth/profile

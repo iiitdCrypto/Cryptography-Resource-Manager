@@ -6,7 +6,11 @@ const auth = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 const xml2js = require('xml2js');  // Updated import
+const cors = require('cors');
 require('dotenv').config();
+
+// Enable CORS
+router.use(cors());
 
 const SITEMAP_URL = 'https://thehackernews.com/news-sitemap.xml';
 
@@ -17,6 +21,13 @@ const CATEGORIES = {
   blockchain: ['blockchain', 'bitcoin', 'cryptocurrency', 'ethereum', 'smart contract']
 };
 
+// Add these headers for CORS
+router.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+});
+
 // Get articles from multiple sources
 router.get('/all', async (req, res) => {
   try {
@@ -24,29 +35,37 @@ router.get('/all', async (req, res) => {
     const pageSize = parseInt(req.query.pageSize) || 10;
     const { category = 'all', search = '' } = req.query;
 
-    console.log('Fetching articles with params:', { page, pageSize, category, search });
+    // Set timeout for requests
+    const requestTimeout = 10000; // 10 seconds
 
-    // Fetch and filter news articles from The Hacker News
-    const newsArticles = await fetchHackerNewsArticles(category, page, pageSize);
-    console.log('News articles fetched:', newsArticles);
-    
-    // Fetch and filter academic articles
-    const academicArticles = await fetchAcademicArticles(search, category, page, pageSize);
-    console.log('Academic articles fetched:', academicArticles);
-
-    if (!newsArticles.items.length && !academicArticles.items.length) {
-      console.log('No articles found');
-    }
-
-    res.json({
-      success: true,
-      articles: {
-        academic: academicArticles,
-        news: newsArticles
+    // Create axios instance with timeout
+    const axiosInstance = axios.create({
+      timeout: requestTimeout,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/xml, text/xml, */*'
       }
     });
+
+    console.log('Fetching articles with params:', { page, pageSize, category, search });
+
+    // Fetch articles with better error handling
+    const [newsArticles, academicArticles] = await Promise.allSettled([
+      fetchHackerNewsArticles(category, page, pageSize, axiosInstance),
+      fetchAcademicArticles(search, category, page, pageSize)
+    ]);
+
+    const response = {
+      success: true,
+      articles: {
+        news: newsArticles.status === 'fulfilled' ? newsArticles.value : { items: [], total: 0, error: newsArticles.reason },
+        academic: academicArticles.status === 'fulfilled' ? academicArticles.value : { items: [], total: 0, error: academicArticles.reason }
+      }
+    };
+
+    res.json(response);
   } catch (error) {
-    console.error('Detailed error in /all route:', error);
+    console.error('Error in /all route:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error fetching articles',
@@ -56,7 +75,7 @@ router.get('/all', async (req, res) => {
   }
 });
 
-async function fetchHackerNewsArticles(category, page, pageSize) {
+async function fetchHackerNewsArticles(category, page, pageSize, axiosInstance) {
   try {
     // Define crypto keywords for filtering
     const CRYPTO_KEYWORDS = [
@@ -73,14 +92,22 @@ async function fetchHackerNewsArticles(category, page, pageSize) {
     
     // Fetch sitemap with detailed error logging
     console.log('Fetching sitemap from:', SITEMAP_URL);
-    const response = await axios.get(SITEMAP_URL, {
+    const response = await axiosInstance.get(SITEMAP_URL, {
       headers: {
-        'User-Agent': 'Cryptography-Resource-Manager/1.0',
-        'Accept': 'application/xml, text/xml, */*'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/xml, text/xml, */*',
+        'Origin': process.env.CLIENT_URL || 'http://localhost:3000'
       },
-      timeout: 15000 // 15 second timeout
+      timeout: 15001,
+      validateStatus: function (status) {
+        return status >= 200 && status < 500;
+      }
     });
     
+    if (!response.data) {
+      throw new Error('No data received from sitemap');
+    }
+
     console.log('Sitemap response received, parsing XML...');
     const parser = new xml2js.Parser();
     
@@ -92,21 +119,31 @@ async function fetchHackerNewsArticles(category, page, pageSize) {
           return resolve({ items: [], total: 0, page, pageSize, hasMore: false });
         }
         
-        if (!result.urlset || !result.urlset.url) {
-          console.error('Invalid sitemap structure');
-          return resolve({ items: [], total: 0, page, pageSize, hasMore: false });
-        }
-        
         try {
-          // Map the XML data to article objects
-          const articles = result.urlset.url.map(url => ({
-            title: url['news:news'][0]['news:title'][0],
-            link: url.loc[0],
-            pubDate: new Date(url['news:news'][0]['news:publication_date'][0]),
-            source: 'The Hacker News',
-            keywords: url['news:news'][0]['news:keywords'] ? 
-                     url['news:news'][0]['news:keywords'][0].split(',') : []
-          }));
+          if (!result || !result.urlset || !result.urlset.url) {
+            console.error('Invalid sitemap structure:', JSON.stringify(result));
+            return resolve({ items: [], total: 0, page, pageSize, hasMore: false });
+          }
+          
+          // Map the XML data to article objects with validation
+          const articles = result.urlset.url
+            .filter(url => url['news:news'] && url['news:news'][0] && url['news:news'][0]['news:title'])
+            .map(url => {
+              try {
+                return {
+                  title: url['news:news'][0]['news:title'][0],
+                  link: url.loc[0],
+                  pubDate: new Date(url['news:news'][0]['news:publication_date'][0]),
+                  source: 'The Hacker News',
+                  keywords: url['news:news'][0]['news:keywords'] ? 
+                          url['news:news'][0]['news:keywords'][0].split(',') : []
+                };
+              } catch (parseError) {
+                console.error('Error parsing article:', parseError, url);
+                return null;
+              }
+            })
+            .filter(article => article !== null); // Remove any failed parses
           
           // Filter crypto-related articles
           const cryptoArticles = articles.filter(article => {

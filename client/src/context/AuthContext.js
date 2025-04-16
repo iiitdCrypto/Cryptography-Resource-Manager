@@ -26,11 +26,15 @@ export const AuthProvider = ({ children }) => {
             authService.logout();
             setUser(null);
           } else {
+            // Set axios default header
+            axios.defaults.headers.common['x-auth-token'] = token;
+            
             // Fetch fresh user data from the server
             const userData = await authService.getProfile();
             setUser(userData);
           }
         } catch (err) {
+          console.error('Auth initialization error:', err);
           authService.logout();
           setUser(null);
         }

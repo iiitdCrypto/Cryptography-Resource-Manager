@@ -24,17 +24,14 @@ const auth = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Get user from database with permissions
-    const user = await executeQuery('SELECT id, name, email, role FROM users WHERE id = ?', [decoded.id]);
+    const user = await executeQuery('SELECT id, first_name, last_name, email, role FROM users WHERE id = ?', [decoded.id]);
     
     if (user.length === 0) {
       return res.status(401).json({ message: 'Token is not valid' });
     }
     
-    // Update last login time
-    await executeQuery(
-      'UPDATE users SET last_login = NOW() WHERE id = ?',
-      [decoded.id]
-    );
+    // Skip updating last login time as the column doesn't exist
+    // If last_login tracking is needed, the users table schema should be updated first
     
     // Add user info to request
     req.user = user[0];

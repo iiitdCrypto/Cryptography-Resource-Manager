@@ -3,6 +3,39 @@ const { executeQuery } = require('../config/db');
 // Helper function to get user permissions
 const getUserPermissions = async (userId) => {
   try {
+     // First check if user exists
+    const user = await executeQuery(
+      'SELECT id FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (user.length === 0) {
+      console.error('User not found:', userId);
+      return null;
+    }
+
+    // Check if user_permissions table exists and create if not
+    await executeQuery(`
+      CREATE TABLE IF NOT EXISTS user_permissions (
+        user_id INT NOT NULL,
+        can_access_dashboard BOOLEAN DEFAULT FALSE,
+        can_update_content BOOLEAN DEFAULT FALSE,
+        can_manage_users BOOLEAN DEFAULT FALSE,
+        can_view_analytics BOOLEAN DEFAULT FALSE,
+        can_create_events BOOLEAN DEFAULT FALSE,
+        can_edit_events BOOLEAN DEFAULT FALSE,
+        can_delete_events BOOLEAN DEFAULT FALSE,
+        can_create_resources BOOLEAN DEFAULT FALSE,
+        can_edit_resources BOOLEAN DEFAULT FALSE,
+        can_delete_resources BOOLEAN DEFAULT FALSE,
+        can_view_audit_logs BOOLEAN DEFAULT FALSE,
+        can_manage_permissions BOOLEAN DEFAULT FALSE,
+        can_export_data BOOLEAN DEFAULT FALSE,
+        PRIMARY KEY (user_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
     const permissions = await executeQuery(
       `SELECT * FROM user_permissions WHERE user_id = ?`, 
       [userId]
@@ -10,12 +43,30 @@ const getUserPermissions = async (userId) => {
     
     if (permissions.length === 0) {
       // Create default permissions if none exist
-      await executeQuery(
-        `INSERT INTO user_permissions 
-         (user_id, can_access_dashboard, can_update_content, created_at, updated_at) 
-         VALUES (?, ?, ?, NOW(), NOW())`,
-        [userId, false, false]
-      );
+      try {
+        await executeQuery(
+          `INSERT INTO user_permissions (
+            user_id,
+            can_access_dashboard,
+            can_update_content,
+            can_manage_users,
+            can_view_analytics,
+            can_create_events,
+            can_edit_events,
+            can_delete_events,
+            can_create_resources,
+            can_edit_resources,
+            can_delete_resources,
+            can_view_audit_logs,
+            can_manage_permissions,
+            can_export_data
+          ) VALUES (?, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)`,
+          [userId]
+        );
+      } catch (insertError) {
+        console.error('Error creating default permissions:', insertError);
+        return null;
+      }
       return { 
         canAccessDashboard: false,
         canUpdateContent: false,
@@ -33,20 +84,22 @@ const getUserPermissions = async (userId) => {
       };
     }
     
+    // Map database fields to permission object
+    // Default all permissions to false if they don't exist in the database
     return {
-      canAccessDashboard: permissions[0].can_access_dashboard === 1,
-      canUpdateContent: permissions[0].can_update_content === 1,
-      canManageUsers: permissions[0].can_manage_users === 1,
-      canViewAnalytics: permissions[0].can_view_analytics === 1,
-      canCreateEvents: permissions[0].can_create_events === 1,
-      canEditEvents: permissions[0].can_edit_events === 1,
-      canDeleteEvents: permissions[0].can_delete_events === 1,
-      canCreateResources: permissions[0].can_create_resources === 1,
-      canEditResources: permissions[0].can_edit_resources === 1,
-      canDeleteResources: permissions[0].can_delete_resources === 1,
-      canViewAuditLogs: permissions[0].can_view_audit_logs === 1,
-      canManagePermissions: permissions[0].can_manage_permissions === 1,
-      canExportData: permissions[0].can_export_data === 1
+      canAccessDashboard: Boolean(permissions[0].can_access_dashboard),
+      canUpdateContent: Boolean(permissions[0].can_update_content),
+      canManageUsers: Boolean(permissions[0].can_manage_users),
+      canViewAnalytics: Boolean(permissions[0].can_view_analytics),
+      canCreateEvents: Boolean(permissions[0].can_create_events),
+      canEditEvents: Boolean(permissions[0].can_edit_events),
+      canDeleteEvents: Boolean(permissions[0].can_delete_events),
+      canCreateResources: Boolean(permissions[0].can_create_resources),
+      canEditResources: Boolean(permissions[0].can_edit_resources),
+      canDeleteResources: Boolean(permissions[0].can_delete_resources),
+      canViewAuditLogs: Boolean(permissions[0].can_view_audit_logs),
+      canManagePermissions: Boolean(permissions[0].can_manage_permissions),
+      canExportData: Boolean(permissions[0].can_export_data)
     };
   } catch (error) {
     console.error('Error getting user permissions:', error);
@@ -64,6 +117,26 @@ const attachPermissions = async (req, res, next) => {
     const permissions = await getUserPermissions(req.user.id);
     
     if (!permissions) {
+      console.error('Failed to get permissions for user:', req.user.id);
+      // For admin users, provide default full permissions
+      if (req.user.role === 'admin') {
+        req.user.permissions = {
+          canAccessDashboard: true,
+          canUpdateContent: true,
+          canManageUsers: true,
+          canViewAnalytics: true,
+          canCreateEvents: true,
+          canEditEvents: true,
+          canDeleteEvents: true,
+          canCreateResources: true,
+          canEditResources: true,
+          canDeleteResources: true,
+          canViewAuditLogs: true,
+          canManagePermissions: true,
+          canExportData: true
+        };
+        return next();
+      }
       return res.status(500).json({ message: 'Error retrieving user permissions' });
     }
     

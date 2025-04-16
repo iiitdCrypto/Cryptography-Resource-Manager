@@ -31,14 +31,31 @@ CREATE TABLE IF NOT EXISTS permissions (
 -- User permissions mapping
 CREATE TABLE IF NOT EXISTS user_permissions (
   user_id INT NOT NULL,
-  permission_id INT NOT NULL,
-  granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  granted_by INT,
-  PRIMARY KEY (user_id, permission_id),
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE,
-  FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL
+  can_access_dashboard BOOLEAN DEFAULT FALSE,
+  can_update_content BOOLEAN DEFAULT FALSE,
+  can_manage_users BOOLEAN DEFAULT FALSE,
+  can_view_analytics BOOLEAN DEFAULT FALSE,
+  can_create_events BOOLEAN DEFAULT FALSE,
+  can_edit_events BOOLEAN DEFAULT FALSE,
+  can_delete_events BOOLEAN DEFAULT FALSE,
+  can_create_resources BOOLEAN DEFAULT FALSE,
+  can_edit_resources BOOLEAN DEFAULT FALSE,
+  can_delete_resources BOOLEAN DEFAULT FALSE,
+  can_view_audit_logs BOOLEAN DEFAULT FALSE,
+  can_manage_permissions BOOLEAN DEFAULT FALSE,
+  can_export_data BOOLEAN DEFAULT FALSE,
+  PRIMARY KEY (user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  can_delete_resources BOOLEAN DEFAULT FALSE,
+  can_view_audit_logs BOOLEAN DEFAULT FALSE,
+  can_manage_permissions BOOLEAN DEFAULT FALSE,
+  can_export_data BOOLEAN DEFAULT FALSE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
 
 -- Resources table
 CREATE TABLE IF NOT EXISTS resources (

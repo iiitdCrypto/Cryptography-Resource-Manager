@@ -326,9 +326,9 @@ const loginUser = asyncHandler(async (req, res) => {
       throw new Error('Invalid email or password');
     }
 
-    // Reset login attempts and update last login
+    // Reset login attempts
     await executeQuery(
-      'UPDATE users SET login_attempts = 0, last_login = NOW() WHERE id = ?',
+      'UPDATE users SET login_attempts = 0 WHERE id = ?',
       [user.id]
     );
 
@@ -372,7 +372,7 @@ const loginUser = asyncHandler(async (req, res) => {
       profile_image: user.profile_image,
       bio: user.bio,
       email_verified: user.email_verified,
-      last_login: user.last_login,
+      // last_login field removed as it doesn't exist in the schema
       permissions: permissions[0] || {},
       settings: settings[0] || {},
       token
@@ -415,7 +415,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
     // Get user
     const users = await executeQuery(
       `SELECT id, name, surname, email, role, institution, position, 
-       profile_image, bio, email_verified, last_login, created_at
+       profile_image, bio, email_verified, created_at
        FROM users WHERE id = ?`,
       [req.user.id]
     );

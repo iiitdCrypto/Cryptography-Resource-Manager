@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/db');
+const { executeQuery } = require('../config/db');
 const auth = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
@@ -32,7 +32,7 @@ const upload = multer({
 // Get all professors
 router.get('/', async (req, res) => {
   try {
-    const [professors] = await pool.query(`
+    const professors = await executeQuery(`
       SELECT p.*, u.name as creator_name 
       FROM professors p 
       LEFT JOIN users u ON p.created_by = u.id

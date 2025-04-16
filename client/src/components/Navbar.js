@@ -74,7 +74,7 @@ const Navbar = () => {
   };
 
   return (
-    <NavbarContainer scrolled={scrolled}>
+    <NavbarContainer $scrolled={scrolled}>
       <div className="container">
         <NavbarContent>
           <Logo to="/">
@@ -193,7 +193,7 @@ const Navbar = () => {
 };
 
 const NavbarContainer = styled.nav`
-  background-color: ${({ scrolled }) => scrolled ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.9)'};
+  background-color: ${({ $scrolled }) => $scrolled ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.9)'};
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;

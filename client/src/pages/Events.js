@@ -29,8 +29,9 @@ const Events = () => {
 
     events.forEach(event => {
       const eventDate = new Date(event.date);
-      const eventEndTime = new Date(event.date + ' ' + event.time.split('-')[1]);
-      const eventStartTime = new Date(event.date + ' ' + event.time.split('-')[0]);
+      const [startTime, endTime] = (event.time || '').split('-');
+      const eventStartTime = startTime ? new Date(`${event.date} ${startTime}`) : eventDate;
+      const eventEndTime = endTime ? new Date(`${event.date} ${endTime}`) : eventDate;
 
       if (now >= eventStartTime && now <= eventEndTime) {
         ongoing.push(event);

@@ -13,8 +13,8 @@ const Profile = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const [profileData, setProfileData] = useState({
-    name: '',
-    surname: '',
+    firstName: '',
+    lastName: '',
     email: ''
   });
   const [passwordData, setPasswordData] = useState({
@@ -31,13 +31,17 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        if (authService.isAuthenticated()) {
-          const profileData = await authService.getProfile();
-          const nameParts = profileData.firstName ? [profileData.firstName, profileData.lastName] : ['', ''];
-          
+        if (user) {
           setProfileData({
-            name: nameParts[0] || '',
-            surname: nameParts[1] || '',
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            email: user.email || ''
+          });
+        } else if (authService.isAuthenticated()) {
+          const profileData = await authService.getProfile();
+          setProfileData({
+            firstName: profileData.firstName || '',
+            lastName: profileData.lastName || '',
             email: profileData.email || ''
           });
         }
@@ -46,9 +50,8 @@ const Profile = () => {
         setUpdateError('Failed to load profile data');
       }
     };
-    
     fetchProfile();
-  }, []);
+  }, [user]);
   
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -62,8 +65,6 @@ const Profile = () => {
       ...profileData,
       [name]: value
     });
-    
-    // Clear error when user types
     if (profileErrors[name]) {
       setProfileErrors({
         ...profileErrors,
@@ -90,22 +91,18 @@ const Profile = () => {
   
   const validateProfileForm = () => {
     const errors = {};
-    const { name, surname, email } = profileData;
-    
-    if (!name.trim()) {
-      errors.name = 'First name is required';
+    const { firstName, lastName, email } = profileData;
+    if (!firstName.trim()) {
+      errors.firstName = 'First name is required';
     }
-    
-    if (!surname.trim()) {
-      errors.surname = 'Last name is required';
+    if (!lastName.trim()) {
+      errors.lastName = 'Last name is required';
     }
-    
     if (!email) {
       errors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       errors.email = 'Email is invalid';
     }
-    
     setProfileErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -134,22 +131,31 @@ const Profile = () => {
   
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
-    
     if (validateProfileForm()) {
       setIsSubmitting(true);
       setUpdateSuccess('');
       setUpdateError('');
-      
       try {
-        await authService.updateProfile({
-          firstName: profileData.name.trim(),
-          lastName: profileData.surname.trim(),
+        const response = await authService.updateProfile({
+          firstName: profileData.firstName.trim(),
+          lastName: profileData.lastName.trim(),
           email: profileData.email
         });
         
+        // Update local user data with the response
+        if (response && response.user) {
+          setProfileData({
+            firstName: response.user.firstName || '',
+            lastName: response.user.lastName || '',
+            email: response.user.email || ''
+          });
+        }
+        
         setUpdateSuccess('Profile updated successfully');
       } catch (error) {
-        setUpdateError(error.response?.data?.message || 'Failed to update profile');
+        const errorMessage = error.message || error.response?.data?.message || 'Failed to update profile';
+        setUpdateError(errorMessage);
+        console.error('Profile update error:', error);
       } finally {
         setIsSubmitting(false);
       }
@@ -262,11 +268,11 @@ const Profile = () => {
                     </InputIcon>
                     <FormInput
                       type="text"
-                      name="name"
+                      name="firstName"
                       placeholder="Enter your first name"
-                      value={profileData.name}
+                      value={profileData.firstName}
                       onChange={handleProfileChange}
-                      error={profileErrors.name}
+                      error={profileErrors.firstName}
                     />
                   </InputWrapper>
                   {profileErrors.name && (
@@ -282,11 +288,11 @@ const Profile = () => {
                     </InputIcon>
                     <FormInput
                       type="text"
-                      name="surname"
+                      name="lastName"
                       placeholder="Enter your last name"
-                      value={profileData.surname}
+                      value={profileData.lastName}
                       onChange={handleProfileChange}
-                      error={profileErrors.surname}
+                      error={profileErrors.lastName}
                     />
                   </InputWrapper>
                   {profileErrors.surname && (

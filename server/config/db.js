@@ -4,39 +4,58 @@ require('dotenv').config();
 let pool = null;
 
 const initializeDatabase = async () => {
-  try {
-    // First try to create database if it doesn't exist
-    const tempPool = mysql.createPool({
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0
-    });
-    await tempPool.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME}`);
-    await tempPool.end();
+  const MAX_RETRIES = 5;
+  const RETRY_DELAY = 3000; // 3 seconds
+  let retries = 0;
 
-    // Create the main connection pool
-    pool = mysql.createPool({
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-      multipleStatements: true
-    });
+  while (retries < MAX_RETRIES) {
+    try {
+      // First try to create database if it doesn't exist
+      const tempPool = mysql.createPool({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0,
+        connectTimeout: 10000 // 10 seconds timeout
+      });
+      
+      await tempPool.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME}`);
+      await tempPool.end();
 
-    // Test connection
-    const connection = await pool.getConnection();
-    console.log('Database connection established successfully');
-    connection.release();
-    return pool;
-  } catch (error) {
-    console.error('Database initialization error:', error);
-    process.exit(1);
+      // Create the main connection pool
+      pool = mysql.createPool({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0,
+        multipleStatements: true,
+        connectTimeout: 10000 // 10 seconds timeout
+      });
+
+      // Test connection
+      const connection = await pool.getConnection();
+      console.log('Database connection established successfully');
+      connection.release();
+      return pool;
+    } catch (error) {
+      retries++;
+      console.error(`Database connection attempt ${retries}/${MAX_RETRIES} failed:`, error.message);
+      
+      if (retries >= MAX_RETRIES) {
+        console.error('Maximum connection retries reached. Please check your database credentials and configuration.');
+        console.error('Error details:', error);
+        console.log('Hint: Verify that your MySQL server is running and that the credentials in .env file are correct.');
+        process.exit(1);
+      }
+      
+      console.log(`Retrying in ${RETRY_DELAY/1000} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+    }
   }
 };
 

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/db');
+const { executeQuery } = require('../config/db');
 const auth = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
@@ -31,7 +31,7 @@ const upload = multer({
 // Get all projects
 router.get('/', async (req, res) => {
   try {
-    const [projects] = await pool.query(`
+    const projects = await executeQuery(`
       SELECT p.*, CONCAT(u.name, ' ', u.surname) as creator_name 
       FROM projects p 
       LEFT JOIN users u ON p.created_by = u.id
@@ -48,7 +48,7 @@ router.get('/', async (req, res) => {
 router.get('/type/:type', async (req, res) => {
   try {
     const { type } = req.params;
-    const [projects] = await pool.query(`
+    const projects = await executeQuery(`
       SELECT p.*, CONCAT(u.name, ' ', u.surname) as creator_name 
       FROM projects p 
       LEFT JOIN users u ON p.created_by = u.id
@@ -66,7 +66,7 @@ router.get('/type/:type', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const [projects] = await pool.query(`
+    const projects = await executeQuery(`
       SELECT p.*, CONCAT(u.name, ' ', u.surname) as creator_name 
       FROM projects p 
       LEFT JOIN users u ON p.created_by = u.id
@@ -100,7 +100,7 @@ router.post('/', auth, upload.single('file'), async (req, res) => {
       filePath = req.file.path;
     }
     
-    const [result] = await pool.query(
+    const result = await executeQuery(
       'INSERT INTO projects (title, description, type, url, file_path, created_by) VALUES (?, ?, ?, ?, ?, ?)',
       [title, description, type, url, filePath, createdBy]
     );
@@ -137,7 +137,7 @@ router.put('/:id', auth, upload.single('file'), async (req, res) => {
     updateQuery += ' WHERE id = ?';
     queryParams.push(id);
     
-    await pool.query(updateQuery, queryParams);
+    await executeQuery(updateQuery, queryParams);
     
     res.status(200).json({ message: 'Project updated successfully' });
   } catch (error) {
@@ -156,7 +156,7 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(403).json({ message: 'Access denied. Admin only.' });
     }
     
-    await pool.query('DELETE FROM projects WHERE id = ?', [id]);
+    await executeQuery('DELETE FROM projects WHERE id = ?', [id]);
     
     res.status(200).json({ message: 'Project deleted successfully' });
   } catch (error) {

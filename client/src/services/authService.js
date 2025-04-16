@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://0.0.0.0:5001/api';
+const API_URL = (process.env.REACT_APP_API_URL || 'http://0.0.0.0:5001') + '/api';
 
 // Setup axios interceptor for token handling
 axios.interceptors.request.use(
@@ -42,7 +42,7 @@ const authService = {
   // Update user profile
   updateProfile: async (profileData) => {
     try {
-      const response = await axios.put(`${API_URL}/auth/profile`, profileData);
+      const response = await axios.put(`${API_URL}/auth/profile`, profileData); // Should be correct if API_URL includes /api
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;

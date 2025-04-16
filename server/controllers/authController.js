@@ -166,13 +166,27 @@ const login = asyncHandler(async (req, res) => {
 
   const token = generateToken(user.id);
 
+  // Check user's dashboard access
+  let canAccessDashboard = user.role === 'admin' || user.role === 'authorized';
+  
+  // If not admin/authorized, check permissions
+  if (!canAccessDashboard) {
+    const permissions = await executeQuery(
+      'SELECT * FROM user_permissions up JOIN permissions p ON up.permission_id = p.id WHERE up.user_id = ? AND p.name = "access_dashboard"',
+      [user.id]
+    );
+    canAccessDashboard = permissions.length > 0;
+  }
+
   res.json({
     id: user.id,
     firstName: user.first_name,
     lastName: user.last_name,
     email: user.email,
     role: user.role,
-    token
+    token,
+    redirectTo: canAccessDashboard ? '/dashboard' : '/',
+    canAccessDashboard
   });
 });
 

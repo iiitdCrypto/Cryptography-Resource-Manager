@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   first_name VARCHAR(100) NOT NULL,
   last_name VARCHAR(100) NOT NULL,
+  name VARCHAR(201) GENERATED ALWAYS AS (CONCAT(first_name, ' ', last_name)) STORED,
   email VARCHAR(255) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
   role ENUM('regular', 'authorized', 'admin') DEFAULT 'regular',
@@ -107,21 +108,23 @@ CREATE TABLE IF NOT EXISTS project_members (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS check_project_members_limit;
+
+DELIMITER //
+
 -- Trigger to enforce maximum 10 members per project
-CREATE TRIGGER IF NOT EXISTS check_project_members_limit
+CREATE TRIGGER check_project_members_limit
 BEFORE INSERT ON project_members
 FOR EACH ROW
 BEGIN
-    DECLARE member_count INT;
-    SELECT COUNT(*) INTO member_count
-    FROM project_members
-    WHERE project_id = NEW.project_id;
-    
-    IF member_count >= 10 THEN
+    IF (SELECT COUNT(*) FROM project_members WHERE project_id = NEW.project_id) >= 10 THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Maximum 10 members per project limit exceeded';
     END IF;
-END;
+END //
+
+DELIMITER ;
 
 -- Visitor logs table for analytics
 CREATE TABLE IF NOT EXISTS visitor_logs (

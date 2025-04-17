@@ -88,7 +88,23 @@ const Register = () => {
         // If registration is successful, show OTP verification
         setShowOtpVerification(true);
       } catch (error) {
-        setRegisterError(error.response?.data?.error || error.message || 'Registration failed. Please try again.');
+        console.error('Registration error details:', error);
+        
+        // Check for the specific "Email is already registered" error
+        if (error.message && error.message.includes('Email is already registered')) {
+          setRegisterError('Email is already registered. Please use a different email address.');
+        } else if (error.response?.data) {
+          // Try to extract error from HTML response if present
+          const errorResponse = error.response.data;
+          if (typeof errorResponse === 'string' && errorResponse.includes('Error:')) {
+            const errorMatch = errorResponse.match(/Error: ([^<]+)/);
+            setRegisterError(errorMatch ? errorMatch[1].trim() : 'Registration failed. Please try again.');
+          } else {
+            setRegisterError(error.response.data.error || error.message || 'Registration failed. Please try again.');
+          }
+        } else {
+          setRegisterError(error.message || 'Registration failed. Please try again.');
+        }
       } finally {
         setIsSubmitting(false);
       }

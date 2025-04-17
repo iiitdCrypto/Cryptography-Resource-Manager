@@ -19,23 +19,46 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
+          // First check if token is a valid format before decoding
+          if (!token || token === 'undefined' || token === 'null' || !token.includes('.')) {
+            console.warn('Invalid token format found in localStorage, removing it');
+            localStorage.removeItem('token');
+            setUser(null);
+            setLoading(false);
+            return;
+          }
+          
           const decodedToken = jwtDecode(token);
           const currentTime = Date.now() / 1000;
           
           if (decodedToken.exp < currentTime) {
-            authService.logout();
+            console.log('Token expired, logging out');
+            localStorage.removeItem('token');
             setUser(null);
           } else {
             // Set axios default header
             axios.defaults.headers.common['x-auth-token'] = token;
             
             // Fetch fresh user data from the server
-            const userData = await authService.getProfile();
-            setUser(userData);
+            try {
+              const userData = await authService.getProfile();
+              setUser(userData);
+            } catch (profileError) {
+              console.error('Error fetching user profile:', profileError);
+              // If we can't get the profile, just use the token data as fallback
+              setUser({
+                id: decodedToken.id || decodedToken.userId,
+                email: decodedToken.email,
+                firstName: decodedToken.firstName || decodedToken.name,
+                lastName: decodedToken.lastName,
+                role: decodedToken.role
+              });
+            }
           }
         } catch (err) {
           console.error('Auth initialization error:', err);
-          authService.logout();
+          localStorage.removeItem('token');
+          delete axios.defaults.headers.common['x-auth-token'];
           setUser(null);
         }
       }
@@ -76,6 +99,14 @@ export const AuthProvider = ({ children }) => {
         // that falls out of the range of 2xx
         console.error('Error response data:', error.response.data);
         console.error('Error response status:', error.response.status);
+        
+        // Handle the "email already registered" error (comes as status 400)
+        if (error.response.status === 400) {
+          // Try to extract the error message from the HTML response if needed
+          if (typeof error.response.data === 'string' && error.response.data.includes('Email is already registered')) {
+            throw new Error('Email is already registered. Please use a different email address.');
+          }
+        }
         
         // Provide more helpful error messages based on status code
         if (error.response.status === 404) {

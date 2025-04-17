@@ -96,24 +96,24 @@ const Navbar = () => {
             {isOpen ? <FaTimes /> : <FaBars />}
           </MenuToggle>
 
-          <NavMenu isOpen={isOpen}>
-            <NavItem active={isActive('/')}>
+          <NavMenu $isOpen={isOpen}>
+            <NavItem $active={isActive('/')}>
               <NavLink to="/" onClick={() => setIsOpen(false)}>
                 Home
               </NavLink>
             </NavItem>
             
-            <NavItem ref={resourcesRef} active={location.pathname.includes('/resources')}>
+            <NavItem ref={resourcesRef} $active={location.pathname.includes('/resources')}>
               <DropdownToggle 
                 onClick={toggleResourcesDropdown}
-                isOpen={resourcesDropdownOpen}
+                $isOpen={resourcesDropdownOpen}
               >
                 <FaBook />
                 <span>Resources</span>
                 <FaChevronDown />
               </DropdownToggle>
               
-              <DropdownMenu isOpen={resourcesDropdownOpen}>
+              <DropdownMenu $isOpen={resourcesDropdownOpen}>
                 <DropdownItem to="/resources/videos" onClick={() => setIsOpen(false)}>
                   <FaVideo />
                   <span>Videos</span>
@@ -133,27 +133,27 @@ const Navbar = () => {
               </DropdownMenu>
             </NavItem>
             
-            <NavItem active={isActive('/articles')}>
+            <NavItem $active={isActive('/articles')}>
               <NavLink to="/articles" onClick={() => setIsOpen(false)}>
                 Articles
               </NavLink>
             </NavItem>
             
-            <NavItem active={isActive('/events')}>
+            <NavItem $active={isActive('/events')}>
               <NavLink to="/events" onClick={() => setIsOpen(false)}>
                 <FaCalendarAlt />
                 <span>Events</span>
               </NavLink>
             </NavItem>
             
-            <NavItem active={isActive('/lectures')}>
+            <NavItem $active={isActive('/lectures')}>
               <NavLink to="/lectures" onClick={() => setIsOpen(false)}>
                 <FaGraduationCap />
                 <span>Lectures</span>
               </NavLink>
             </NavItem>
             
-            <NavItem active={isActive('/about-cryptography')}>
+            <NavItem $active={isActive('/about-cryptography')}>
               <NavLink to="/about-cryptography" onClick={() => setIsOpen(false)}>
                 <FaInfoCircle />
                 <span>crypto@IIITD</span>
@@ -161,14 +161,14 @@ const Navbar = () => {
             </NavItem>
             
             {!user ? (
-              <NavItem active={isActive('/login')}>
+              <NavItem $active={isActive('/login')}>
                 <NavLink to="/login" onClick={() => setIsOpen(false)}>
                   Login
                 </NavLink>
               </NavItem>
             ) : (
               <>
-                <NavItem active={isActive('/profile')}>
+                <NavItem $active={isActive('/profile')}>
                   <NavLink to="/profile" onClick={() => setIsOpen(false)}>
                     <FaUser />
                     <span>Profile</span>
@@ -176,7 +176,7 @@ const Navbar = () => {
                 </NavItem>
                 
                 {user.role === 'admin' && (
-                  <NavItem active={isActive('/admin/dashboard')}>
+                  <NavItem $active={isActive('/admin/dashboard')}>
                     <NavLink to="/admin/dashboard" onClick={() => setIsOpen(false)}>
                       <FaShieldAlt />
                       <span>Admin</span>
@@ -261,9 +261,9 @@ const NavMenu = styled.ul`
     backdrop-filter: blur(10px);
     box-shadow: ${({ theme }) => theme.shadows.medium};
     padding: 0.8rem 0;
-    transform: ${({ isOpen }) => isOpen ? 'translateY(0)' : 'translateY(-100%)'};
-    opacity: ${({ isOpen }) => isOpen ? 1 : 0};
-    visibility: ${({ isOpen }) => isOpen ? 'visible' : 'hidden'};
+    transform: ${({ $isOpen }) => $isOpen ? 'translateY(0)' : 'translateY(-100%)'};
+    opacity: ${({ $isOpen }) => $isOpen ? 1 : 0};
+    visibility: ${({ $isOpen }) => $isOpen ? 'visible' : 'hidden'};
     transition: all 0.3s ease;
     z-index: 99;
     height: auto;
@@ -285,7 +285,7 @@ const NavItem = styled.li`
     position: absolute;
     bottom: 0;
     left: 0;
-    width: ${({ active }) => active ? '100%' : '0'};
+    width: ${({ $active }) => $active ? '100%' : '0'};
     height: 2px;
     background-color: ${({ theme }) => theme.colors.primary};
     transition: width 0.3s ease;
@@ -334,7 +334,7 @@ const DropdownToggle = styled.a`
   display: flex;
   align-items: center;
   padding: 0.4rem 0.7rem;
-  color: ${({ theme, isOpen }) => isOpen ? theme.colors.primary : theme.colors.text};
+  color: ${({ theme, $isOpen }) => $isOpen ? theme.colors.primary : theme.colors.text};
   font-weight: 500;
   font-size: 0.9rem;
   cursor: pointer;
@@ -349,7 +349,7 @@ const DropdownToggle = styled.a`
     margin-left: 0.3rem;
     font-size: 0.8rem;
     transition: transform 0.3s ease;
-    transform: ${({ isOpen }) => isOpen ? 'rotate(180deg)' : 'rotate(0)'};
+    transform: ${({ $isOpen }) => $isOpen ? 'rotate(180deg)' : 'rotate(0)'};
   }
   
   &:hover {
@@ -370,9 +370,9 @@ const DropdownMenu = styled.div`
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   padding: 0.5rem 0;
   min-width: 200px;
-  opacity: ${({ isOpen }) => isOpen ? 1 : 0};
-  visibility: ${({ isOpen }) => isOpen ? 'visible' : 'hidden'};
-  transform: ${({ isOpen }) => isOpen ? 'translateY(0)' : 'translateY(-10px)'};
+  opacity: ${({ $isOpen }) => $isOpen ? 1 : 0};
+  visibility: ${({ $isOpen }) => $isOpen ? 'visible' : 'hidden'};
+  transform: ${({ $isOpen }) => $isOpen ? 'translateY(0)' : 'translateY(-10px)'};
   transition: all 0.3s ease;
   z-index: 10;
   
@@ -381,7 +381,7 @@ const DropdownMenu = styled.div`
     box-shadow: none;
     padding: 0;
     min-width: 100%;
-    max-height: ${({ isOpen }) => isOpen ? '1000px' : '0'};
+    max-height: ${({ $isOpen }) => $isOpen ? '1000px' : '0'};
     overflow: hidden;
     transform: none;
   }

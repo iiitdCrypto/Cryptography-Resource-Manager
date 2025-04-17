@@ -83,7 +83,7 @@ const OtpVerification = ({ email, onSuccess, showResend = true }) => {
     setError('');
     
     try {
-      const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/auth/verify-otp`, {
+      const response = await axios.post(`${process.env.REACT_APP_BASE_URL || 'http://localhost:5001'}/api/auth/verify`, {
         email,
         otp: otpValue
       });
@@ -118,7 +118,7 @@ const OtpVerification = ({ email, onSuccess, showResend = true }) => {
     setError('');
     
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/auth/resend-otp`, { email});
+      await axios.post(`${process.env.REACT_APP_BASE_URL || 'http://localhost:5001'}/api/auth/resend-otp`, { email });
       setTimer(60);
       setResending(false);
     } catch (err) {

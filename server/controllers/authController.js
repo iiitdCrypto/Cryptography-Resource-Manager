@@ -210,10 +210,10 @@ const login = asyncHandler(async (req, res) => {
   // If not admin/authorized, check permissions
   if (!canAccessDashboard) {
     const permissions = await executeQuery(
-      'SELECT * FROM user_permissions up JOIN permissions p ON up.permission_id = p.id WHERE up.user_id = ? AND p.name = "access_dashboard"',
+      'SELECT access_dashboard FROM user_permissions WHERE user_id = ?',
       [user.id]
     );
-    canAccessDashboard = permissions.length > 0;
+    canAccessDashboard = permissions.length > 0 && permissions[0].access_dashboard === 1;
   }
 
   res.json({

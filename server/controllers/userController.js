@@ -6,6 +6,395 @@ const crypto = require('crypto');
 const { sendOTPEmail } = require('../utils/emailService');
 const { generateOTP, storeOTP, verifyOTP } = require('../utils/otpService');
 
+// @desc    Get all users
+// @route   GET /api/users
+// @access  Private/Admin
+const getUsers = asyncHandler(async (req, res) => {
+  try {
+    // Get all users
+    const users = await executeQuery(`
+      SELECT u.*, 
+             up.access_dashboard AS can_access_dashboard,
+             up.manage_users AS can_manage_users,
+             up.manage_contents AS can_manage_content,
+             up.can_view_analytics
+      FROM users u
+      LEFT JOIN user_permissions up ON u.id = up.user_id
+      ORDER BY u.created_at DESC
+    `);
+
+    // Transform users for the frontend
+    const transformedUsers = users.map(user => ({
+      id: user.id,
+      name: `${user.first_name} ${user.last_name}`,
+      email: user.email,
+      role: user.role,
+      permissions: {
+        canAccessDashboard: !!user.can_access_dashboard,
+        canManageUsers: !!user.can_manage_users,
+        canManageContent: !!user.can_manage_content,
+        canViewAnalytics: !!user.can_view_analytics
+      },
+      emailVerified: !!user.email_verified,
+      createdAt: user.created_at
+    }));
+
+    res.status(200).json(transformedUsers);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500);
+    throw new Error('Failed to fetch users: ' + error.message);
+  }
+});
+
+// @desc    Get user by ID
+// @route   GET /api/users/:id
+// @access  Private/Admin
+const getUserById = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // Get user with permissions
+    const userResults = await executeQuery(`
+      SELECT u.*, 
+             up.access_dashboard AS can_access_dashboard,
+             up.manage_users AS can_manage_users,
+             up.manage_contents AS can_manage_content,
+             up.can_view_analytics
+      FROM users u
+      LEFT JOIN user_permissions up ON u.id = up.user_id
+      WHERE u.id = ?
+    `, [userId]);
+
+    if (userResults.length === 0) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+
+    const user = userResults[0];
+
+    // Format user data for response
+    const userData = {
+      id: user.id,
+      name: `${user.first_name} ${user.last_name}`,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      email: user.email,
+      role: user.role,
+      permissions: {
+        canAccessDashboard: !!user.can_access_dashboard,
+        canManageUsers: !!user.can_manage_users,
+        canManageContent: !!user.can_manage_content,
+        canViewAnalytics: !!user.can_view_analytics
+      },
+      emailVerified: !!user.email_verified,
+      createdAt: user.created_at
+    };
+
+    res.status(200).json(userData);
+  } catch (error) {
+    if (res.statusCode !== 404) res.status(500);
+    throw new Error(error.message);
+  }
+});
+
+// @desc    Update a user
+// @route   PUT /api/users/:id
+// @access  Private/Admin
+const updateUser = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { name, email, role, password } = req.body;
+    
+    // Validate inputs
+    if (!name && !email && !role && !password) {
+      res.status(400);
+      throw new Error('No data provided for update');
+    }
+
+    // Check if user exists
+    const userExists = await executeQuery('SELECT * FROM users WHERE id = ?', [userId]);
+    if (userExists.length === 0) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+
+    // Begin transaction
+    const connection = await beginTransaction();
+    
+    try {
+      // Split name into first and last name
+      let firstName, lastName;
+      
+      if (name) {
+        const nameParts = name.trim().split(' ');
+        firstName = nameParts[0];
+        lastName = nameParts.slice(1).join(' ') || '';
+      }
+
+      // Build update query
+      let updateFields = [];
+      let updateValues = [];
+
+      if (firstName) {
+        updateFields.push('first_name = ?');
+        updateValues.push(firstName);
+      }
+
+      if (lastName) {
+        updateFields.push('last_name = ?');
+        updateValues.push(lastName);
+      }
+
+      if (email) {
+        updateFields.push('email = ?');
+        updateValues.push(email);
+      }
+
+      if (role) {
+        updateFields.push('role = ?');
+        updateValues.push(role);
+      }
+
+      // If there are fields to update
+      if (updateFields.length > 0) {
+        updateValues.push(userId);
+        await executeQuery(
+          `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`,
+          updateValues
+        );
+      }
+
+      // Update password if provided
+      if (password) {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        
+        await executeQuery(
+          'UPDATE users SET password = ? WHERE id = ?',
+          [hashedPassword, userId]
+        );
+      }
+
+      // Commit the transaction
+      await commitTransaction(connection);
+
+      res.json({ success: true, message: 'User updated successfully' });
+    } catch (error) {
+      // Rollback on error
+      await rollbackTransaction(connection);
+      throw error;
+    }
+  } catch (error) {
+    if (!res.statusCode || res.statusCode === 200) {
+      res.status(500);
+    }
+    throw new Error(error.message);
+  }
+});
+
+// @desc    Delete a user
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
+const deleteUser = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Check if user exists
+    const userExists = await executeQuery('SELECT * FROM users WHERE id = ?', [userId]);
+    if (userExists.length === 0) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+
+    // Delete user
+    await executeQuery('DELETE FROM users WHERE id = ?', [userId]);
+
+    res.json({ success: true, message: 'User deleted successfully' });
+  } catch (error) {
+    if (!res.statusCode || res.statusCode === 200) {
+      res.status(500);
+    }
+    throw new Error(error.message);
+  }
+});
+
+// @desc    Get user audit logs
+// @route   GET /api/users/:id/audit-logs
+// @access  Private/Admin
+const getUserAuditLogs = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // Check if user exists
+    const userExists = await executeQuery('SELECT id FROM users WHERE id = ?', [userId]);
+    if (userExists.length === 0) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+
+    // Get audit logs for the user
+    const auditLogs = await executeQuery(`
+      SELECT * FROM audit_logs 
+      WHERE entity_type = 'USER' AND entity_id = ?
+      ORDER BY created_at DESC
+    `, [userId]);
+
+    res.json(auditLogs);
+  } catch (error) {
+    if (!res.statusCode || res.statusCode === 200) {
+      res.status(500);
+    }
+    throw new Error(error.message);
+  }
+});
+
+// @desc    Update current user profile
+// @route   PUT /api/users/profile/me
+// @access  Private
+const updateCurrentUserProfile = asyncHandler(async (req, res) => {
+  try {
+    const { firstName, lastName, email } = req.body;
+    const userId = req.user.id;
+
+    // Validate inputs
+    if (!firstName && !lastName && !email) {
+      res.status(400);
+      throw new Error('At least one field is required for update');
+    }
+
+    // Check if user exists
+    const userExists = await executeQuery('SELECT * FROM users WHERE id = ?', [userId]);
+    if (userExists.length === 0) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+
+    // Build update query
+    let updateFields = [];
+    let updateValues = [];
+
+    if (firstName) {
+      updateFields.push('first_name = ?');
+      updateValues.push(firstName);
+    }
+
+    if (lastName) {
+      updateFields.push('last_name = ?');
+      updateValues.push(lastName);
+    }
+
+    if (email && email !== userExists[0].email) {
+      // Check if new email is already in use
+      const emailExists = await executeQuery('SELECT id FROM users WHERE email = ? AND id != ?', [email, userId]);
+      if (emailExists.length > 0) {
+        res.status(400);
+        throw new Error('Email already in use');
+      }
+
+      updateFields.push('email = ?');
+      updateValues.push(email);
+      
+      // Reset email verification if email changes
+      updateFields.push('email_verified = ?');
+      updateValues.push(false);
+    }
+
+    // If there are fields to update
+    if (updateFields.length > 0) {
+      updateValues.push(userId);
+      
+      // Execute update
+      await executeQuery(
+        `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`,
+        updateValues
+      );
+
+      res.json({ 
+        success: true, 
+        message: 'Profile updated successfully',
+        emailChanged: email && email !== userExists[0].email
+      });
+    } else {
+      res.json({ success: true, message: 'No changes made' });
+    }
+  } catch (error) {
+    if (!res.statusCode || res.statusCode === 200) {
+      res.status(500);
+    }
+    throw new Error(error.message);
+  }
+});
+
+// @desc    Update user permissions
+// @route   PUT /api/users/:id/permissions
+// @access  Private/Admin
+const updateUserPermissions = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const permissions = req.body.permissions;
+
+    if (!permissions) {
+      res.status(400);
+      throw new Error('Permissions data is required');
+    }
+
+    // Check if user exists
+    const userExists = await executeQuery('SELECT id FROM users WHERE id = ?', [userId]);
+    if (userExists.length === 0) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+
+    // Check if permissions record exists
+    const permissionsExist = await executeQuery(
+      'SELECT * FROM user_permissions WHERE user_id = ?',
+      [userId]
+    );
+
+    if (permissionsExist.length > 0) {
+      // Update existing permissions
+      await executeQuery(
+        `UPDATE user_permissions SET
+         access_dashboard = ?,
+         manage_users = ?,
+         manage_contents = ?,
+         can_view_analytics = ?,
+         updated_at = NOW()
+         WHERE user_id = ?`,
+        [
+          permissions.canAccessDashboard ? 1 : 0,
+          permissions.canManageUsers ? 1 : 0,
+          permissions.canManageContent ? 1 : 0,
+          permissions.canViewAnalytics ? 1 : 0,
+          userId
+        ]
+      );
+    } else {
+      // Create new permissions record
+      await executeQuery(
+        `INSERT INTO user_permissions (
+          user_id, access_dashboard, manage_users, manage_contents, can_view_analytics, created_at
+        ) VALUES (?, ?, ?, ?, ?, NOW())`,
+        [
+          userId,
+          permissions.canAccessDashboard ? 1 : 0,
+          permissions.canManageUsers ? 1 : 0,
+          permissions.canManageContent ? 1 : 0,
+          permissions.canViewAnalytics ? 1 : 0
+        ]
+      );
+    }
+
+    res.json({ success: true, message: 'Permissions updated successfully' });
+  } catch (error) {
+    if (!res.statusCode || res.statusCode === 200) {
+      res.status(500);
+    }
+    throw new Error(error.message);
+  }
+});
+
 // @desc    Register a new user
 // @route   POST /api/users
 // @access  Public
@@ -464,5 +853,12 @@ module.exports = {
   loginUser,
   verifyOTPAndActivateAccount,
   resendOTP,
-  getUserProfile
+  getUserProfile,
+  getUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+  getUserAuditLogs,
+  updateCurrentUserProfile,
+  updateUserPermissions
 };

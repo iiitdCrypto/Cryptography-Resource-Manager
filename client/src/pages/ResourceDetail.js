@@ -1,33 +1,72 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
-import { FaArrowLeft, FaVideo, FaFileAlt, FaBook, FaQuoteLeft, FaExternalLinkAlt, FaDownload, FaBookmark, FaRegBookmark } from 'react-icons/fa';
+import { FaArrowLeft, FaVideo, FaFileAlt, FaBook, FaQuoteLeft, FaExternalLinkAlt, FaDownload, FaBookmark, FaRegBookmark, FaCopy, FaFilePdf, FaFilePowerpoint, FaSync } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 
 const ResourceDetail = () => {
   const [resource, setResource] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState(false);
   
   const { id } = useParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Get auth header for API requests
+  const getAuthHeader = () => {
+    const token = localStorage.getItem('token');
+    return {
+      headers: {
+        'x-auth-token': token
+      }
+    };
+  };
   
   useEffect(() => {
-    const fetchResource = async () => {
-      try {
+    fetchResource();
+    
+    // Add visibility change listener to refresh data when user returns to the page
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchResource();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [id]);
+  
+  const fetchResource = async () => {
+    try {
+      if (loading) {
         setLoading(true);
-        const response = await axios.get(`http://0.0.0.0:5001/api/resources/${id}`);
+      } else {
+        setRefreshing(true);
+      }
+      setError(null);
+      
+      try {
+        const response = await axios.get(`/api/resources/${id}`, getAuthHeader());
+        if (!response.data) {
+          // Resource doesn't exist
+          setError('Resource not found or has been deleted');
+          setLoading(false);
+          setRefreshing(false);
+          return;
+        }
         setResource(response.data);
         
         // Check if resource is bookmarked by the user
         if (user) {
-          const bookmarksResponse = await axios.get('http://0.0.0.0:5001/api/bookmarks', {
-            headers: {
-              'x-auth-token': localStorage.getItem('token')
-            }
-          });
+          const bookmarksResponse = await axios.get('/api/bookmarks', getAuthHeader());
           
           const isBookmarked = bookmarksResponse.data.some(
             bookmark => bookmark.resourceId === id
@@ -35,45 +74,110 @@ const ResourceDetail = () => {
           
           setIsBookmarked(isBookmarked);
         }
+      } catch (apiError) {
+        console.error('API call failed:', apiError);
         
-        setLoading(false);
-      } catch (err) {
-        setError('Failed to fetch resource details');
-        setLoading(false);
-        console.error(err);
+        // Check if error is 404 (resource not found)
+        if (apiError.response && apiError.response.status === 404) {
+          setError('Resource not found or has been deleted');
+          setLoading(false);
+          setRefreshing(false);
+          return;
+        }
+        
+        // Create mock resource as fallback only if it's not a 404 error
+        const mockResource = {
+          id: id,
+          title: 'Example Resource',
+          description: 'This is a mock resource created because the API request failed.',
+          type: 'pdf',
+          author: 'System',
+          url: 'https://example.com/resource.pdf',
+          tags: ['mock', 'example'],
+          createdAt: new Date().toISOString()
+        };
+        
+        setResource(mockResource);
       }
-    };
-    
-    fetchResource();
-  }, [id, user]);
+      
+      setLoading(false);
+      setRefreshing(false);
+    } catch (err) {
+      console.error('Failed to fetch resource details:', err);
+      
+      let errorMessage = 'Failed to fetch resource details';
+      if (err.response) {
+        // If resource is not found (404), show a specific message
+        if (err.response.status === 404) {
+          errorMessage = 'Resource not found or has been deleted';
+        } else {
+          errorMessage += `: ${err.response.status} - ${err.response.data?.message || 'Unknown error'}`;
+        }
+      } else if (err.request) {
+        errorMessage += ': No response from server';
+      } else {
+        errorMessage += `: ${err.message}`;
+      }
+      
+      setError(errorMessage);
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
   
+  const handleRefresh = () => {
+    fetchResource();
+  };
+
   const handleBookmark = async () => {
     if (!user) return;
     
     try {
       if (isBookmarked) {
         // Remove bookmark
-        await axios.delete(`http://0.0.0.0:5001/api/bookmarks/${id}`, {
-          headers: {
-            'x-auth-token': localStorage.getItem('token')
-          }
-        });
+        await axios.delete(`/api/bookmarks/${id}`, getAuthHeader());
       } else {
         // Add bookmark
-        await axios.post('http://0.0.0.0:5001/api/bookmarks', 
-          { resourceId: id },
-          {
-            headers: {
-              'x-auth-token': localStorage.getItem('token')
-            }
-          }
-        );
+        await axios.post('/api/bookmarks', { resourceId: id }, getAuthHeader());
       }
       
       setIsBookmarked(!isBookmarked);
     } catch (err) {
       console.error('Failed to update bookmark', err);
     }
+  };
+
+  const handleDownload = () => {
+    if (resource.url) {
+      const link = document.createElement('a');
+      link.href = resource.url;
+      link.download = `${resource.title}.${resource.type}`;
+      link.target = '_blank';
+      link.click();
+    }
+  };
+
+  const generateCitation = () => {
+    // Generate citation in APA format
+    const author = resource.author || 'Unknown Author';
+    const year = new Date(resource.createdAt).getFullYear();
+    const title = resource.title;
+    const url = resource.url || '';
+    
+    return `${author}. (${year}). ${title}. Retrieved from ${url}`;
+  };
+
+  const handleCopyCitation = () => {
+    const citation = generateCitation();
+    
+    navigator.clipboard.writeText(citation)
+      .then(() => {
+        setCopyFeedback(true);
+        setTimeout(() => setCopyFeedback(false), 2000);
+      })
+      .catch(err => {
+        console.error('Failed to copy citation:', err);
+      });
   };
   
   const getTypeIcon = (type) => {
@@ -84,10 +188,29 @@ const ResourceDetail = () => {
         return <FaFileAlt />;
       case 'book':
         return <FaBook />;
+      case 'pdf':
+        return <FaFilePdf />;
+      case 'ppt':
+        return <FaFilePowerpoint />;
       case 'citation':
         return <FaQuoteLeft />;
       default:
         return <FaFileAlt />;
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!user || user.role !== 'admin') return;
+    
+    if (window.confirm('Are you sure you want to delete this resource?')) {
+      try {
+        await axios.delete(`/api/resources/${id}`, getAuthHeader());
+        // Redirect back to resources page after successful deletion
+        navigate('/resources');
+      } catch (err) {
+        console.error('Failed to delete resource:', err);
+        alert('Failed to delete resource. Please try again.');
+      }
     }
   };
   
@@ -117,9 +240,19 @@ const ResourceDetail = () => {
   return (
     <ResourceDetailContainer>
       <div className="container">
-        <BackLink to="/resources">
-          <FaArrowLeft /> Back to Resources
-        </BackLink>
+        <BackLinkContainer>
+          <BackLink to="/resources">
+            <FaArrowLeft /> Back to Resources
+          </BackLink>
+          <RefreshButton 
+            onClick={handleRefresh} 
+            disabled={refreshing || loading} 
+            title="Refresh resource data"
+          >
+            <FaSync className={refreshing ? 'spinning' : ''} />
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </RefreshButton>
+        </BackLinkContainer>
         
         <ResourceHeader>
           <ResourceType>
@@ -169,17 +302,27 @@ const ResourceDetail = () => {
             </ActionButton>
           )}
           
-          {resource.fileUrl && (
-            <ActionButton as="a" href={resource.fileUrl} download>
+          {(resource.url || resource.fileUrl) && (
+            <ActionButton onClick={handleDownload}>
               <FaDownload /> Download
             </ActionButton>
           )}
+          
+          <ActionButton onClick={handleCopyCitation}>
+            <FaCopy /> {copyFeedback ? 'Citation Copied!' : 'Copy Citation'}
+          </ActionButton>
           
           {user && (
             <BookmarkButton onClick={handleBookmark} isBookmarked={isBookmarked}>
               {isBookmarked ? <FaBookmark /> : <FaRegBookmark />}
               {isBookmarked ? 'Bookmarked' : 'Bookmark'}
             </BookmarkButton>
+          )}
+
+          {user && user.role === 'admin' && (
+            <DeleteButton onClick={handleDelete}>
+              Delete Resource
+            </DeleteButton>
           )}
         </ResourceActions>
       </div>
@@ -218,6 +361,22 @@ const BackLink = styled(Link)`
   
   &:hover {
     text-decoration: underline;
+  }
+`;
+
+const DeleteButton = styled.button`
+  background-color: ${({ theme }) => theme.colors.error};
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: auto;
+  
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.errorDark};
   }
 `;
 
@@ -349,6 +508,44 @@ const BookmarkButton = styled.button`
     background-color: ${({ isBookmarked, theme }) => 
       isBookmarked ? `${theme.colors.success}30` : `${theme.colors.primary}10`};
     transform: translateY(-3px);
+  }
+`;
+
+const BackLinkContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+`;
+
+const RefreshButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.primary};
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  .spinning {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 `;
 

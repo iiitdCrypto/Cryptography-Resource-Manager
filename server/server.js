@@ -2,12 +2,17 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 require('dotenv').config();
 const { connectDB } = require('./config/db');
 const initializeDatabase = require('./config/initDb');
 const { attachPermissions } = require('./middleware/permissions');
+const checkDbConnection = require('./config/checkDbConnection');
 
 const app = express();
+
+// Trust proxy - fix for express-rate-limit
+app.set('trust proxy', 1);
 
 // Security middleware
 app.use(helmet({
@@ -24,15 +29,18 @@ app.use('/api/', limiter);
 
 // CORS configuration
 app.use(cors({
-  origin: ['http://localhost:3000', process.env.CLIENT_URL],
+  origin: ['http://localhost:3000', 'http://localhost:5001', process.env.CLIENT_URL],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token', 'Origin', 'Accept']
 }));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Attach user permissions to all authorized requests
 app.use((req, res, next) => {
@@ -62,9 +70,23 @@ app.get('/api/health', (req, res) => {
 // Initialize database connection and tables
 (async () => {
   try {
-    await connectDB();
-    await initializeDatabase();
-    console.log('Database setup complete');
+    console.log('Starting server initialization...');
+    
+    // Check database connection first
+    const dbConnected = await checkDbConnection();
+    if (!dbConnected) {
+      console.error('Database connection check failed. Proceeding with caution...');
+    }
+    
+    // Initialize database only if connection check passed
+    if (dbConnected) {
+      await connectDB();
+      await initializeDatabase();
+      console.log('Database setup complete');
+    } else {
+      console.warn('⚠️ Database initialization skipped due to connection issues.');
+      console.warn('⚠️ API endpoints that require database access will not work.');
+    }
   } catch (error) {
     console.error('Database initialization error:', error);
     // Don't exit process in development to allow for retries
@@ -101,32 +123,30 @@ app.use('*', (req, res) => {
   res.status(404).json({ message: 'API endpoint not found' });
 });
 
+// Initialize server
 const PORT = process.env.PORT || 5001;
 
-// Function to find an available port
-const startServer = (port) => {
+// Start server with better error handling
+async function startServer() {
+  console.log('Starting server...');
+  
   try {
-    app.listen(port, '0.0.0.0', () => {
-      console.log(`Server running on port ${port}`);
-    }).on('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        console.log(`Port ${port} is busy, trying port ${port + 1}`);
-        startServer(port + 1);
-      } else {
-        console.error('Server error:', err);
-      }
+    // Connect to database
+    const pool = await connectDB();
+    console.log('Database connection established');
+    
+    app.listen(PORT, () => {
+      console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
     });
-  } catch (error) {
-    console.error('Failed to start server:', error);
+  } catch (err) {
+    console.error('Failed to start server:', err.message);
+    console.log('Server will continue to run but some features may not work properly');
+    
+    // Start server anyway to allow mock endpoints to work
+    app.listen(PORT, () => {
+      console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT} (without database connection)`);
+    });
   }
-};
+}
 
-// Start the server
-connectDB()
-  .then(() => {
-    startServer(PORT);
-  })
-  .catch((error) => {
-    console.error('Failed to initialize database:', error);
-    process.exit(1);
-  });
+startServer();

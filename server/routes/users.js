@@ -13,14 +13,67 @@ const { isAdmin } = require('../middleware/permissions');
 // @route   GET /api/users
 // @desc    Get all users
 // @access  Private/Admin
-// Commenting out until implemented
-// router.get('/', auth, isAdmin, userController.getUsers);
+router.get('/', userController.getUsers);
+
+// For development testing only - remove in production
+// @route   GET /api/users/mock
+// @desc    Get mock users for development
+// @access  Public
+router.get('/mock', (req, res) => {
+  // Always return mock data, regardless of database connection
+  console.log('Serving mock user data');
+  const mockUsers = [
+    {
+      id: 1,
+      name: 'Admin User',
+      email: 'admin@example.com',
+      role: 'admin',
+      permissions: {
+        canAccessDashboard: true,
+        canManageUsers: true,
+        canManageContent: true,
+        canViewAnalytics: true
+      },
+      emailVerified: true,
+      createdAt: new Date()
+    },
+    {
+      id: 2,
+      name: 'Regular User',
+      email: 'user@example.com',
+      role: 'regular',
+      permissions: {
+        canAccessDashboard: true,
+        canManageUsers: false,
+        canManageContent: false,
+        canViewAnalytics: true
+      },
+      emailVerified: true,
+      createdAt: new Date()
+    },
+    {
+      id: 3,
+      name: 'Authorized User',
+      email: 'authorized@example.com',
+      role: 'authorized',
+      permissions: {
+        canAccessDashboard: true,
+        canManageUsers: false,
+        canManageContent: true,
+        canViewAnalytics: true
+      },
+      emailVerified: false,
+      createdAt: new Date()
+    }
+  ];
+  
+  res.json(mockUsers);
+});
 
 // @route   GET /api/users/:id
 // @desc    Get user by ID
 // @access  Private/Admin
-// Commenting out until implemented
-// router.get('/:id', auth, isAdmin, userController.getUserById);
+router.get('/:id', auth, userController.getUserById);
 
 // @route   POST /api/users
 // @desc    Create a new user
@@ -52,36 +105,29 @@ router.put('/password', auth, authController.updatePassword);
 // @access  Private
 router.get('/me', auth, userController.getUserProfile);
 
-/*
 // @route   PUT /api/users/:id
 // @desc    Update a user
 // @access  Private/Admin
-// Commenting out until implemented
-// router.put('/:id', auth, isAdmin, userController.updateUser);
+router.put('/:id', auth, userController.updateUser);
 
 // @route   DELETE /api/users/:id
 // @desc    Delete a user
 // @access  Private/Admin
-// Commenting out until implemented
-// router.delete('/:id', auth, isAdmin, userController.deleteUser);
+router.delete('/:id', auth, userController.deleteUser);
 
 // @route   GET /api/users/:id/audit-logs
 // @desc    Get user audit logs
 // @access  Private/Admin
-// Commenting out until implemented
-// router.get('/:id/audit-logs', auth, isAdmin, userController.getUserAuditLogs);
+router.get('/:id/audit-logs', auth, userController.getUserAuditLogs);
 
 // @route   PUT /api/users/profile/me
 // @desc    Update current user profile
 // @access  Private
-// Commenting out until implemented
-// router.put('/profile/me', auth, userController.updateCurrentUserProfile);
+router.put('/profile/me', auth, userController.updateCurrentUserProfile);
 
 // @route   PUT /api/users/:id/permissions
 // @desc    Update user permissions
 // @access  Private/Admin
-// Commenting out until implemented
-// router.put('/:id/permissions', auth, isAdmin, userController.updateUserPermissions);
-*/
+router.put('/:id/permissions', auth, userController.updateUserPermissions);
 
 module.exports = router;

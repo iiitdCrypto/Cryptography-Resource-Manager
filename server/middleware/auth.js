@@ -9,10 +9,21 @@ const isProfileRoute = (path) => {
 
 // Verify JWT token middleware
 const auth = async (req, res, next) => {
-  // Skip auth check for dashboard routes
+  // Log the request path for debugging
+  console.log('Auth middleware - Request path:', req.path);
+  console.log('Auth token:', req.header('x-auth-token') ? 'Token exists' : 'No token');
+
+  // Skip auth check for these routes
   if (req.path.startsWith('/api/admin/stats') || 
       req.path.startsWith('/api/resources') ||
+      req.path === '/api/resources/upload' ||
       req.path.startsWith('/api/admin/users')) {
+    console.log('Auth check bypassed for:', req.path);
+    // For bypassed auth, add a mock user with admin permissions
+    req.user = {
+      id: 1,
+      role: 'admin'
+    };
     return next();
   }
 

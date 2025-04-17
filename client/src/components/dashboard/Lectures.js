@@ -24,6 +24,20 @@ const Lectures = () => {
     fetchCourses();
   }, []);
 
+  // Helper function to format dates safely
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Unknown date';
+    
+    const date = new Date(dateString);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Unknown';
+    }
+    
+    return date.toLocaleDateString();
+  };
+
   const fetchCourses = async () => {
     try {
       const response = await axios.get('/api/courses');
@@ -131,7 +145,7 @@ const Lectures = () => {
                 <tr key={lecture.id}>
                   <td>{lecture.lectureNo}</td>
                   <td>{lecture.topic}</td>
-                  <td>{new Date(lecture.date).toLocaleDateString()}</td>
+                  <td>{formatDate(lecture.date)}</td>
                   <td>
                     {lecture.notes.type === 'url' ? (
                       <NoteLink href={lecture.notes.content} target="_blank">

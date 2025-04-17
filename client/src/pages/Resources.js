@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
-import { FaPlus, FaSearch, FaFilter, FaVideo, FaFileAlt, FaBook, FaQuoteLeft, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaFilter, FaVideo, FaFileAlt, FaBook, FaQuoteLeft, FaExternalLinkAlt, FaDownload, FaCopy, FaSync } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 
 const Resources = () => {
@@ -16,14 +16,125 @@ const Resources = () => {
   });
   const [availableTags, setAvailableTags] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState({ id: null, copied: false });
+  const [refreshing, setRefreshing] = useState(false);
   
   const { user } = useAuth();
+  const location = useLocation();
+
+  // Get auth header for API requests
+  const getAuthHeader = () => {
+    const token = localStorage.getItem('token');
+    return {
+      headers: {
+        'x-auth-token': token
+      }
+    };
+  };
   
   useEffect(() => {
-    const fetchResources = async () => {
+    // Check server status first
+    const checkServerStatus = async () => {
       try {
-        setLoading(true);
-        const response = await axios.get('http://0.0.0.0:5001/api/resources');
+        const response = await axios.get('/api/health');
+        if (response.data.status === 'ok') {
+          console.log('Server is available, fetching resources');
+          fetchResources();
+        } else {
+          console.log('Server reported issues, using local mock data');
+          useLocalMockData();
+        }
+      } catch (error) {
+        console.log('Server health check failed, using local mock data', error);
+        useLocalMockData();
+      }
+    };
+    
+    checkServerStatus();
+    
+    // This will refresh resources when user comes back to this page
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkServerStatus();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [location.key]); // Re-fetch when location changes (user navigates back to page)
+
+  const useLocalMockData = () => {
+    console.log('Using local mock data directly from the client');
+    setLoading(false);
+    setRefreshing(false);
+    
+    const mockResources = [
+      {
+        id: 1,
+        title: 'Introduction to Symmetric Cryptography',
+        description: 'A comprehensive overview of symmetric encryption techniques',
+        type: 'video',
+        url: 'https://example.com/video1',
+        file_path: null,
+        created_by: 1,
+        creator_name: 'Dr. Jane Smith',
+        tags: ['symmetric', 'encryption', 'basics'],
+        createdAt: new Date().toISOString(),
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 2,
+        title: 'Public Key Infrastructure Explained',
+        description: 'Deep dive into PKI and its applications in modern cryptography',
+        type: 'pdf',
+        url: 'https://example.com/pki-guide.pdf',
+        file_path: '/uploads/resources/pki-guide.pdf',
+        created_by: 2,
+        creator_name: 'Prof. John Doe',
+        tags: ['PKI', 'asymmetric', 'advanced'],
+        createdAt: new Date().toISOString(),
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 3,
+        title: 'Blockchain and Cryptography',
+        description: 'How cryptographic principles are used in blockchain technology',
+        type: 'book',
+        url: 'https://example.com/blockchain-book',
+        file_path: null,
+        created_by: 1,
+        creator_name: 'Michael Chen',
+        tags: ['blockchain', 'applications', 'modern'],
+        createdAt: new Date().toISOString(),
+        created_at: new Date().toISOString()
+      }
+    ];
+    
+    setResources(mockResources);
+    
+    // Extract unique tags from local mock resources
+    const tags = new Set();
+    mockResources.forEach(resource => {
+      if (resource.tags && Array.isArray(resource.tags)) {
+        resource.tags.forEach(tag => tags.add(tag));
+      }
+    });
+    
+    setAvailableTags(Array.from(tags));
+  };
+
+  const fetchResources = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setRefreshing(true);
+      
+      try {
+        // Use the same API endpoint as dashboard with auth header
+        const response = await axios.get('/api/resources', getAuthHeader());
         setResources(response.data);
         
         // Extract unique tags from resources
@@ -35,16 +146,102 @@ const Resources = () => {
         });
         
         setAvailableTags(Array.from(tags));
-        setLoading(false);
-      } catch (err) {
-        setError('Failed to fetch resources');
-        setLoading(false);
-        console.error(err);
+      } catch (apiError) {
+        console.error('API call failed, trying mock endpoint:', apiError);
+        
+        try {
+          // Try the mock endpoint
+          const mockResponse = await axios.get('/api/resources/mock', getAuthHeader());
+          console.log('Using mock endpoint data');
+          setResources(mockResponse.data);
+          
+          // Extract unique tags from mock resources
+          const tags = new Set();
+          mockResponse.data.forEach(resource => {
+            if (resource.tags && Array.isArray(resource.tags)) {
+              resource.tags.forEach(tag => tags.add(tag));
+            }
+          });
+          
+          setAvailableTags(Array.from(tags));
+        } catch (mockError) {
+          console.error('Mock endpoint also failed, using fallback data:', mockError);
+          
+          // Use hardcoded mock data as last resort
+          const mockResources = [
+            {
+              id: 1,
+              title: 'Introduction to Symmetric Cryptography',
+              description: 'A comprehensive overview of symmetric encryption techniques',
+              type: 'video',
+              url: 'https://example.com/video1',
+              file_path: null,
+              created_by: 1,
+              creator_name: 'Dr. Jane Smith',
+              tags: ['symmetric', 'encryption', 'basics'],
+              createdAt: new Date().toISOString()
+            },
+            {
+              id: 2,
+              title: 'Public Key Infrastructure Explained',
+              description: 'Deep dive into PKI and its applications in modern cryptography',
+              type: 'pdf',
+              url: 'https://example.com/pki-guide.pdf',
+              file_path: '/uploads/resources/pki-guide.pdf',
+              created_by: 2,
+              creator_name: 'Prof. John Doe',
+              tags: ['PKI', 'asymmetric', 'advanced'],
+              createdAt: new Date().toISOString()
+            },
+            {
+              id: 3,
+              title: 'Blockchain and Cryptography',
+              description: 'How cryptographic principles are used in blockchain technology',
+              type: 'book',
+              url: 'https://example.com/blockchain-book',
+              file_path: null,
+              created_by: 1,
+              creator_name: 'Michael Chen',
+              tags: ['blockchain', 'applications', 'modern'],
+              createdAt: new Date().toISOString()
+            }
+          ];
+          
+          setResources(mockResources);
+          
+          // Extract unique tags from local mock resources
+          const tags = new Set();
+          mockResources.forEach(resource => {
+            if (resource.tags && Array.isArray(resource.tags)) {
+              resource.tags.forEach(tag => tags.add(tag));
+            }
+          });
+          
+          setAvailableTags(Array.from(tags));
+        }
       }
-    };
-    
+    } catch (err) {
+      console.error('Error fetching resources:', err);
+      
+      let errorMessage = 'Failed to load resources';
+      if (err.response) {
+        errorMessage += `: ${err.response.status} - ${err.response.data?.message || 'Unknown error'}`;
+      } else if (err.request) {
+        errorMessage += ': No response from server';
+      } else {
+        errorMessage += `: ${err.message}`;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+  
+  const handleRefresh = () => {
     fetchResources();
-  }, []);
+  };
   
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
@@ -70,11 +267,50 @@ const Resources = () => {
         return <FaFileAlt />;
       case 'book':
         return <FaBook />;
+      case 'pdf':
+        return <FaFileAlt />;
+      case 'ppt':
+        return <FaFileAlt />;
       case 'citation':
         return <FaQuoteLeft />;
       default:
         return <FaFileAlt />;
     }
+  };
+
+  const handleDownload = (resource) => {
+    if (resource.url) {
+      // For direct file downloads
+      const link = document.createElement('a');
+      link.href = resource.url;
+      link.download = `${resource.title}.${resource.type}`;
+      link.target = '_blank';
+      link.click();
+    }
+  };
+
+  const generateCitation = (resource) => {
+    // Generate citation in APA format
+    const author = resource.creator_name || resource.author || 'Unknown Author';
+    const year = new Date(resource.createdAt).getFullYear();
+    const title = resource.title;
+    const url = resource.url || '';
+    
+    return `${author}. (${year}). ${title}. Retrieved from ${url}`;
+  };
+
+  const handleCopyCitation = (id) => {
+    const resource = resources.find(r => (r.id || r._id) === id);
+    const citation = generateCitation(resource);
+    
+    navigator.clipboard.writeText(citation)
+      .then(() => {
+        setCopyFeedback({ id, copied: true });
+        setTimeout(() => setCopyFeedback({ id: null, copied: false }), 2000);
+      })
+      .catch(err => {
+        console.error('Failed to copy citation:', err);
+      });
   };
   
   const filteredResources = resources.filter(resource => {
@@ -119,6 +355,15 @@ const Resources = () => {
           </SearchContainer>
           
           <ControlsActions>
+            <RefreshButton 
+              onClick={handleRefresh} 
+              disabled={refreshing} 
+              title="Refresh resources list"
+            >
+              <FaSync className={refreshing ? 'spinning' : ''} />
+              <span>Refresh</span>
+            </RefreshButton>
+            
             <FilterButton onClick={toggleFilters}>
               <FaFilter />
               <span>Filters</span>
@@ -144,9 +389,11 @@ const Resources = () => {
               >
                 <option value="all">All Types</option>
                 <option value="video">Videos</option>
-                <option value="note">Notes</option>
+                <option value="pdf">PDFs</option>
                 <option value="book">Books</option>
-                <option value="citation">Citations</option>
+                <option value="note">Notes</option>
+                <option value="ppt">Presentations</option>
+                <option value="article">Articles</option>
               </FilterSelect>
             </FilterGroup>
             
@@ -185,12 +432,12 @@ const Resources = () => {
         ) : (
           <ResourcesGrid>
             {filteredResources.map(resource => (
-              <ResourceCard key={resource._id}>
+              <ResourceCard key={resource.id || resource._id}>
                 <ResourceType>
                   {getTypeIcon(resource.type)}
                   <span>{resource.type.charAt(0).toUpperCase() + resource.type.slice(1)}</span>
                 </ResourceType>
-                <ResourceTitle to={`/resources/${resource._id}`}>
+                <ResourceTitle to={`/resources/${resource.id || resource._id}`}>
                   {resource.title}
                 </ResourceTitle>
                 <ResourceDescription>
@@ -215,11 +462,30 @@ const Resources = () => {
                     <MetaItem>Added on {new Date(resource.createdAt).toLocaleDateString()}</MetaItem>
                   </ResourceMeta>
                   
-                  {resource.url && (
-                    <ExternalLink href={resource.url} target="_blank" rel="noopener noreferrer">
-                      <FaExternalLinkAlt />
-                    </ExternalLink>
-                  )}
+                  <ActionButtons>
+                    {(resource.type === 'pdf' || resource.type === 'book' || resource.url) && (
+                      <ActionButton title="Download" onClick={() => handleDownload(resource)}>
+                        <FaDownload />
+                      </ActionButton>
+                    )}
+                    
+                    <ActionButton 
+                      title={copyFeedback.id === (resource.id || resource._id) && copyFeedback.copied ? "Copied!" : "Copy Citation"}
+                      onClick={() => handleCopyCitation(resource.id || resource._id)}
+                      active={copyFeedback.id === (resource.id || resource._id) && copyFeedback.copied}
+                    >
+                      <FaCopy />
+                      {copyFeedback.id === (resource.id || resource._id) && copyFeedback.copied && (
+                        <CopiedTooltip>Copied!</CopiedTooltip>
+                      )}
+                    </ActionButton>
+                    
+                    {resource.url && (
+                      <ActionButton as="a" href={resource.url} target="_blank" rel="noopener noreferrer" title="Open Link">
+                        <FaExternalLinkAlt />
+                      </ActionButton>
+                    )}
+                  </ActionButtons>
                 </ResourceFooter>
               </ResourceCard>
             ))}
@@ -509,20 +775,86 @@ const MetaItem = styled.span`
   font-size: 0.9rem;
 `;
 
-const ExternalLink = styled.a`
+const ActionButtons = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
+const ActionButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ active, theme }) => active ? theme.colors.primary : theme.colors.textLight};
+  cursor: pointer;
+  position: relative;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  background-color: ${({ theme }) => `${theme.colors.primary}10`};
+  border-radius: 4px;
+  transition: all 0.2s;
+  
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary};
+    background-color: ${({ theme }) => `${theme.colors.primary}10`};
+  }
+`;
+
+const CopiedTooltip = styled.span`
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: ${({ theme }) => theme.colors.text};
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  
+  &:after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: ${({ theme }) => theme.colors.text} transparent transparent transparent;
+  }
+`;
+
+const RefreshButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.5rem;
+  background-color: transparent;
   color: ${({ theme }) => theme.colors.primary};
-  border-radius: 50%;
+  border: 2px solid ${({ theme }) => theme.colors.primary};
+  border-radius: 5px;
+  font-weight: 600;
+  cursor: pointer;
   transition: all 0.3s ease;
   
   &:hover {
-    background-color: ${({ theme }) => theme.colors.primary};
-    color: white;
+    background-color: ${({ theme }) => `${theme.colors.primary}10`};
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  .spinning {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 `;
 

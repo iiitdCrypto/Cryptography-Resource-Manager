@@ -50,3 +50,31 @@ CREATE TABLE IF NOT EXISTS verification_tokens (
   UNIQUE KEY unique_token (token),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- Audit logs table for tracking system changes
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT,
+  action_type ENUM('CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'ACCESS') NOT NULL,
+  entity_type VARCHAR(50) NOT NULL,
+  entity_id INT NOT NULL,
+  old_value JSON,
+  new_value JSON,
+  ip_address VARCHAR(45),
+  user_agent TEXT,
+  details TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- User settings table
+CREATE TABLE IF NOT EXISTS user_settings (
+  user_id INT NOT NULL,
+  theme VARCHAR(20) DEFAULT 'light',
+  notification_enabled BOOLEAN DEFAULT TRUE,
+  email_notifications BOOLEAN DEFAULT TRUE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
